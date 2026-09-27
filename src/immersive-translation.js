@@ -54,6 +54,10 @@
     return /background did not respond|message (?:port|channel) closed|未返回结果|翻译接口响应超时/i.test(error && error.message || error);
   }
 
+  function isTruncatedResponse(error) {
+    return /truncated|finish_reason=(?:length|MAX_TOKENS)|MAX_TOKENS/i.test(error && error.message || error);
+  }
+
   function clearRecovery() {
     clearTimeout(state.recoveryTimer);
     state.recoveryTimer = null;
@@ -177,6 +181,7 @@
       if (!isCurrentRun(token, pageUrl)) return;
       const pending = applyItems(blocks, cachedItems);
       let firstBatch = true;
+      let batchSizeLimit = BATCH_SIZE;
       let failure = null;
       const worker = async () => {
         while (pending.length && !failure && token === state.runToken) {
@@ -193,7 +198,7 @@
           // those scheduled after scrolling; larger background batches retain
           // throughput without increasing the concurrency limit.
           const batch = takeNextBatch(pending,
-            visibleCount ? Math.min(FIRST_BATCH_SIZE, visibleCount) : smallBatch ? FIRST_BATCH_SIZE : BATCH_SIZE,
+            Math.min(batchSizeLimit, visibleCount ? Math.min(FIRST_BATCH_SIZE, visibleCount) : smallBatch ? FIRST_BATCH_SIZE : BATCH_SIZE),
             smallBatch ? VISIBLE_BATCH_CHAR_LIMIT : App.BATCH_CHAR_LIMIT);
           firstBatch = false;
           try {
@@ -203,6 +208,13 @@
             if (missing.length) throw new Error("Translation missing for some blocks. Click to retry.");
           } catch (error) {
             if (!isCurrentRun(token, pageUrl)) return;
+            if (!failure && !isUncertainRequest(error) && isTruncatedResponse(error) && batch.length > 1) {
+              // Persistently reduce this run's batch size so requeued blocks
+              // cannot merge back into the batch that exhausted output tokens.
+              batchSizeLimit = Math.min(batchSizeLimit, Math.ceil(batch.length / 2));
+              pending.unshift(...batch.filter((block) => block.container.dataset.ytbtState !== "done"));
+              continue;
+            }
             // Stop scheduling after an error, but let already-sent requests
             // finish and render so a late success cannot overwrite error state.
             if (!failure || isUncertainRequest(error)) failure = error;
@@ -238,7 +250,9 @@
         App.showStatus("翻译响应暂时中断，已完成的译文会保留。正在检查缓存，不会自动重发付费请求。", true);
         await recoverCachedTranslations();
       } else {
-        App.showStatus(`翻译暂停：${message}`, true);
+        App.showStatus(isTruncatedResponse(error)
+          ? "翻译暂停：单段译文仍超出模型输出上限。已保留完成的译文，请在沉浸式翻译设置中更换模型后重试。"
+          : `翻译暂停：${message}`, true);
       }
     }
   }

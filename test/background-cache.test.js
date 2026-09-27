@@ -155,6 +155,49 @@ function freeGoogleResponse(text = "谷歌译文") {
   return jsonResponse([[[text, "source", null, null]], null, "en"]);
 }
 
+test("an empty truncated single-paragraph response gets one larger budget and caches only the complete translation", async () => {
+  const fixture = createFixture();
+  const budgets = [];
+  fixture.hooks.fetch = (_url, options) => {
+    budgets.push(JSON.parse(options.body).max_tokens);
+    if (budgets.length === 1) return jsonResponse({ choices: [{ message: { content: "" }, finish_reason: "length" }] });
+  };
+  const worker = fixture.startWorker();
+  const message = immersiveMessage(["Linked lists take linear time to search for an item."]);
+  const response = await worker.request(message);
+  assert.equal(response.ok, true);
+  assert.equal(response.items.length, 1);
+  assert.equal(response.items[0].id, "im0");
+  assert.deepEqual(budgets, [2048, 8000]);
+  const cached = await worker.request({ ...message, cacheOnly: true });
+  assert.equal(cached.items[0].translatedText, response.items[0].translatedText);
+  assert.equal(fixture.fetchCount, 2);
+});
+
+test("truncation recovery is bounded and never caches incomplete content", async (t) => {
+  for (const [label, texts, expectedCalls] of [
+    ["single paragraph", ["Binary search trees."], 2],
+    ["batch needs splitting in content", ["Binary search trees.", "Linked lists."], 1],
+    ["paragraph already at maximum budget", ["A long paragraph. ".repeat(500)], 1]
+  ]) {
+    await t.test(label, async () => {
+      const fixture = createFixture();
+      fixture.hooks.fetch = () => jsonResponse({ choices: [{
+        message: { content: '{"items":[{"id":"0","translatedText":"incomplete"}]}' }, finish_reason: "length"
+      }] });
+      const worker = fixture.startWorker();
+      const message = immersiveMessage(texts);
+      const result = await worker.request(message);
+      assert.equal(result.ok, false);
+      assert.match(result.errors[0].message, /truncated/);
+      assert.equal(fixture.fetchCount, expectedCalls);
+      const cached = await worker.request({ ...message, cacheOnly: true });
+      assert.equal(cached.items.length, 0);
+      assert.equal(fixture.fetchCount, expectedCalls);
+    });
+  }
+});
+
 test("legacy Google automatic fallback setting is ignored for AI and subtitle translations", async () => {
   const fixture = createFixture({ immersiveFallbackProvider: "google-free" });
   const urls = [];

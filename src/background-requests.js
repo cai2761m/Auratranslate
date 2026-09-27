@@ -103,6 +103,11 @@ async function translateWithRetry(request) {
       if (error.requestMayHaveReachedProvider) throw error;
       const message = (error && error.message) || String(error);
       if (isTruncationError(message)) {
+        // Webpage batches shrink in the page scheduler. An intact paragraph
+        // cannot shrink further: allow one larger response, then stop.
+        if (request.mode === "immersive" && request.cues.length === 1 && error.outputTokenLimit < 8000) {
+          return await translateBatch({ ...request, maxOutputTokens: 8000 });
+        }
         throw error;
       }
       // Fatal / unknown errors (bad config, auth, quota, unparseable shapes)
@@ -148,14 +153,15 @@ async function translateBatch({
   asrCorrectionEnabled,
   showOriginalTechnicalTerms,
   cues,
-  mode
+  mode,
+  maxOutputTokens
 }) {
   const sourceLabel = Core.sourceLanguageLabel(sourceLanguage);
   const targetLabel = Core.targetLanguageLabel(targetLanguage);
   // Allow roughly 200 output tokens per cue so longer batches are not silently
   // truncated. Bounded to a sane [2048, 8000] range.
   const sourceCharCount = cues.reduce((total, cue) => total + String(cue.sourceText || "").length, 0);
-  const maxTokens = Math.min(8000, Math.max(2048, cues.length * 220, Math.ceil(sourceCharCount * 1.25)));
+  const maxTokens = Math.min(8000, Math.max(2048, cues.length * 220, Math.ceil(sourceCharCount * 1.25), Number(maxOutputTokens) || 0));
   const sourcePolishInstruction = asrCorrectionEnabled
     ? "Before translating, correct only obvious ASR recognition mistakes in the source using nearby batch context: wrong homophones, broken word boundaries, missing small words, and clear recognition errors. Preserve technical terms, names, code identifiers, acronyms, numbers, and uncertain words exactly when unsure. "
     : "Do not rewrite the source words for ASR correction; only restore natural punctuation and capitalization. ";
@@ -252,7 +258,7 @@ async function translateBatch({
     content = extractGeminiCandidateText(candidate);
     if (!content && body && body.promptFeedback && body.promptFeedback.blockReason) {
       throw new Error(`${translationConfig.providerLabel} returned empty content (${body.promptFeedback.blockReason}).`);
-    } else if (!content && finishReason) {
+    } else if (!content && finishReason && finishReason !== "MAX_TOKENS") {
       throw new Error(`${translationConfig.providerLabel} returned empty content (finish_reason=${finishReason}).`);
     }
   } else {
@@ -308,16 +314,18 @@ async function translateBatch({
     finishReason = choice && choice.finish_reason;
   }
 
-  if (!content) {
-    throw new Error(`${translationConfig.providerLabel} returned empty content.`);
-  }
-
   // Detect token-limit truncation so the caller can shrink the batch and retry,
   // instead of silently dropping cues and entering per-cue retry loops.
   if (finishReason === "length" || finishReason === "MAX_TOKENS") {
-    throw new Error(
-      `${translationConfig.providerLabel} response truncated (finish_reason=${finishReason}); split batch in content.`
+    const error = new Error(
+      `${translationConfig.providerLabel} response truncated (finish_reason=${finishReason}).`
     );
+    error.outputTokenLimit = maxTokens;
+    throw error;
+  }
+
+  if (!content) {
+    throw new Error(`${translationConfig.providerLabel} returned empty content.`);
   }
 
   if (mode === "segmentation") {

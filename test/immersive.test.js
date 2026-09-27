@@ -578,6 +578,38 @@ test("a failed concurrent batch stops new work while late successes survive and 
   assert.equal(document.querySelectorAll("[data-ytbt-immersive-translation][data-ytbt-state='done']").length, 32);
 });
 
+test("truncated webpage batches shrink to individual paragraphs and continue the page", async (t) => {
+  const completed = new Set();
+  const { document, requests } = await translatePage(t, paragraphs(24), {
+    sendMessage(message) {
+      if (message.cacheOnly) return { ok: true, items: [] };
+      assert.ok(message.items.every((item) => !completed.has(item.id)), "successful paragraphs must not be replayed");
+      if (message.items.length > 1) return { ok: false, errors: [{ message: "ali response truncated (finish_reason=length)." }] };
+      message.items.forEach((item) => completed.add(item.id));
+      return translatedResponse(message);
+    }
+  });
+  const paid = requests.filter((message) => !message.cacheOnly);
+  assert.ok(paid.some((message) => message.items.length === 4));
+  assert.ok(paid.some((message) => message.items.length === 2));
+  assert.equal(completed.size, 24);
+  assert.ok(paid.length < 40, "splitting must terminate without recombining failed batches");
+  assert.equal(document.querySelectorAll("[data-ytbt-immersive-translation][data-ytbt-state='done']").length, 24);
+  assert.equal(document.querySelectorAll("[data-ytbt-immersive-translation][data-ytbt-state='error']").length, 0);
+});
+
+test("a truncated single paragraph stops with actionable guidance instead of looping", async (t) => {
+  const { document, requests } = await translatePage(t, paragraphs(1), {
+    expectedState: "error",
+    sendMessage(message) {
+      return message.cacheOnly ? { ok: true, items: [] }
+        : { ok: false, errors: [{ message: "ali response truncated (finish_reason=length)." }] };
+    }
+  });
+  assert.equal(requests.filter((message) => !message.cacheOnly).length, 1);
+  assert.match(document.querySelector(".ytbt-immersive-panel").textContent, /单段译文.*更换模型/);
+});
+
 test("long paragraphs remain within per-request character limits", async (t) => {
   const text = "This sentence is sufficiently long to exercise batching. ".repeat(50);
   const { requests } = await translatePage(t, `<main>${Array.from({ length: 8 }, () => `<p>${text}</p>`).join("")}</main>`);

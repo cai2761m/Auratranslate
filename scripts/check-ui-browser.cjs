@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const { createPreviewServer } = require("./preview-ui.cjs");
+const { checkFloatingControl } = require("./check-floating-browser.cjs");
 
 async function main() {
   const server = createPreviewServer();
@@ -34,6 +35,10 @@ async function main() {
       fullPage: true,
       animations: "disabled",
     });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.screenshot({ path: path.join(screenshots, "options-dark.png"), fullPage: true, animations: "disabled" });
+    assert.equal(await page.locator(".panel").evaluate((el) => getComputedStyle(el).backgroundColor), "rgb(34, 34, 41)");
+    await page.emulateMedia({ colorScheme: "light" });
     await page.locator("#add-service").click();
     assert.equal(
       await page.evaluate(() => document.activeElement.id),
@@ -106,10 +111,19 @@ async function main() {
     );
     await page.goto(`${url}/popup/popup.html`);
     await page.locator("#translate-page:enabled").waitFor();
+    await page.locator("main").screenshot({ path: path.join(screenshots, "popup-default.png"), animations: "disabled" });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.locator("main").screenshot({ path: path.join(screenshots, "popup-dark.png"), animations: "disabled" });
+    await page.emulateMedia({ colorScheme: "light" });
     await page.locator("#more-toggle").click();
     await page.locator('[data-site-rule="always"]').click();
     await page.locator("#status").filter({ hasText: "设置已保存" }).waitFor();
-    await page.screenshot({ path: path.join(screenshots, "popup-more.png"), fullPage: true, animations: "disabled" });
+    await page.locator("main").screenshot({ path: path.join(screenshots, "popup-more.png"), animations: "disabled" });
+    for (const width of [320, 380]) {
+      await page.setViewportSize({ width, height: 600 });
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "narrow popup has no horizontal overflow");
+      assert.ok((await page.locator("main").boundingBox()).height <= 600, "expanded popup fits browser action height");
+    }
     await page.locator("#more-toggle").click();
     await page.locator("#display-mode-toggle").click();
     await page.waitForFunction(
@@ -122,11 +136,25 @@ async function main() {
       .locator("#status")
       .filter({ hasText: "网页翻译已完成" })
       .waitFor();
-    await page.screenshot({
+    await page.locator("main").screenshot({
       path: path.join(screenshots, "popup.png"),
-      fullPage: true,
       animations: "disabled",
     });
+    await page.goto(`${url}/options/options.html`);
+    for (const width of [1280, 1024, 768, 390, 320]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const tab of ["translation-services", "realtime-api", "immersive-api", "general-settings"]) {
+        await page.locator(`#tab-${tab}`).click();
+        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${tab} fits ${width}px`);
+      }
+      if (width === 1280 || width === 390) await page.screenshot({ path: path.join(screenshots, `general-${width}.png`), fullPage: true, animations: "disabled" });
+    }
+    await page.locator("#tab-translation-services").click();
+    await page.locator("#add-service").click();
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "mobile dialog fits page");
+    await page.screenshot({ path: path.join(screenshots, "dialog-mobile.png"), fullPage: true, animations: "disabled" });
+    await page.keyboard.press("Escape");
+    await checkFloatingControl(browser, screenshots);
     assert.deepEqual(errors, [], "no browser errors or CSP violations");
     console.log(
       `Browser UI checks passed (mock storage/provider, production bundles, Chrome). Screenshots: ${screenshots}`,

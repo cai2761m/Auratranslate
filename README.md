@@ -170,7 +170,9 @@ On Windows, use `npm.cmd ci` and `npm.cmd test` if PowerShell blocks `npm.ps1`.
 
 Edit `ui/options/`, `ui/popup/`, and `ui/shared/`; do not edit the generated `options/options.js` or `popup/popup.js`. Commit the rebuilt bundles with source changes. `npm run dev` rebuilds on changes; `npm run build:check` (also run before tests) rejects stale bundles.
 
-Run `npm run preview` to open the UI at `http://127.0.0.1:5174/options/options.html` or `/popup/popup.html`. This local preview uses synthetic settings and mocked provider responses, never real API requests. `npm run test:ui:browser` checks the production bundles in installed Chrome with the extension's script CSP, desktop/mobile layouts, dialogs, and popup interactions. Set `UI_BROWSER=msedge` to use installed Edge. This does not replace testing the installed extension or Firefox Android.
+Shared UI colors, typography, and light/dark themes live in `ui/shared/theme.css`. Keep this stylesheet in the extension package alongside the generated bundles.
+
+Run `npm run preview` to open the UI at `http://127.0.0.1:5174/options/options.html` or `/popup/popup.html`. This local preview uses synthetic settings and mocked provider responses, never real API requests. `npm run test:ui:browser` checks the production bundles in installed Chrome with the extension's script CSP, light/dark themes, desktop/mobile layouts, dialogs, and popup interactions. It also checks the production floating control on a rendered test page: backdrop changes, progress states, keyboard operation, dragging, and reduced motion. Set `UI_BROWSER=msedge` to use installed Edge. This does not replace testing the installed extension or Firefox Android.
 
 The test suite covers caption parsing, configuration persistence, sentence segmentation, caching, webpage extraction and formatting, tab lifecycle recovery, message timeouts, and subtitle dragging. Tests simulate browser behavior; live API and device checks remain separate.
 

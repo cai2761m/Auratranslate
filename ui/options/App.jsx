@@ -6,6 +6,7 @@ import { ServiceDialog } from "./ServiceDialog";
 import { ModelTestDialog } from "./ModelTestDialog";
 import { TranslationSettings } from "./TranslationSettings";
 import { GeneralSettings } from "./GeneralSettings";
+import { Icon } from "../shared/Icon";
 
 const PAGES = [
   ["translation-services", "翻译服务", "供应方与模型目录"],
@@ -104,13 +105,15 @@ export function OptionsApp() {
   return (
     <main className="page">
       <header className="page-header">
-        <div>
-          <p className="eyebrow">AuraTranslate</p>
+        <div className="brand">
+          <span className="brand-mark">
+            <Icon name="translate" />
+          </span>
+          <span className="brand-name">AuraTranslate</span>
+          <span className="header-divider" />
           <h1>设置</h1>
-          <p>
-            在“翻译服务”页维护供应方和模型目录，其余页面只选择要使用的服务与模型。
-          </p>
         </div>
+        <span className="save-note">更改自动保存</span>
       </header>
       <div className="settings-layout">
         <aside className="settings-sidebar" inert={modal || picking}>
@@ -133,8 +136,11 @@ export function OptionsApp() {
                 onClick={() => navigate(id)}
                 onKeyDown={(event) => navigateKey(event, index)}
               >
-                <span className="sidebar-title">{label}</span>
-                <span className="sidebar-desc">{desc}</span>
+                <Icon name={["services", "subtitles", "webpage", "settings"][index]} />
+                <span className="sidebar-copy">
+                  <span className="sidebar-title">{label}</span>
+                  <span className="sidebar-desc">{desc}</span>
+                </span>
               </button>
             ))}
           </nav>
@@ -155,7 +161,7 @@ export function OptionsApp() {
                     <p className="section-kicker">Providers</p>
                     <h2>翻译服务</h2>
                     <p>
-                      添加自定义供应方并维护它的模型目录；“实时字幕”和“沉浸式翻译”页只从这里挑选服务与模型。
+                      连接你的 AI 服务，为网页与字幕选择合适的翻译模型。
                     </p>
                   </div>
                   <div className="services-workspace">
@@ -165,7 +171,7 @@ export function OptionsApp() {
                     >
                       <div className="services-scroll">
                         <div className="service-group">
-                          <h3>自定义供应方</h3>
+                          <h3>我的服务 <span>{settings.translationServices.length}</span></h3>
                           <div
                             className="service-list"
                             id="custom-service-list"
@@ -180,20 +186,22 @@ export function OptionsApp() {
                                 aria-current={item.id === service?.id}
                                 onClick={() => setSelectedId(item.id)}
                               >
-                                <span className="service-entry-name">
-                                  {item.name || "未命名供应方"}
+                                <span className="service-avatar">
+                                  <Icon name="services" />
                                 </span>
-                                <span className="service-entry-hint">
-                                  {[
-                                    item.id === settings.translationServiceId &&
-                                      "默认",
-                                    item.id ===
-                                      settings.immersiveTranslationServiceId &&
-                                      "网页默认",
-                                  ]
-                                    .filter(Boolean)
-                                    .join(" · ") ||
-                                    `${item.models.length} 个模型`}
+                                <span className="service-entry-copy">
+                                  <span className="service-entry-name">
+                                    {item.name || "未命名供应方"}
+                                  </span>
+                                  <span className="service-entry-hint">
+                                    {[
+                                      item.id === settings.translationServiceId &&
+                                        "默认",
+                                      item.id === settings.immersiveTranslationServiceId &&
+                                        "网页默认",
+                                    ].filter(Boolean).join(" · ") ||
+                                      `${item.models.length} 个模型`}
+                                  </span>
                                 </span>
                               </button>
                             ))}
@@ -213,7 +221,7 @@ export function OptionsApp() {
                           id="add-service"
                           onClick={() => setDraft(null)}
                         >
-                          ＋ 添加自定义供应方
+                          <Icon name="plus" /> 添加翻译服务
                         </button>
                       </div>
                     </aside>
@@ -234,6 +242,16 @@ export function OptionsApp() {
                         setSelectedId("");
                       }}
                     />
+                    {!service && (
+                      <div className="service-welcome">
+                        <span className="welcome-icon"><Icon name="services" /></span>
+                        <h3>连接第一个翻译服务</h3>
+                        <p>添加兼容 OpenAI 的服务地址和模型，<br />开始使用 AI 翻译。</p>
+                        <button type="button" className="secondary" onClick={() => setDraft(null)}>
+                          添加翻译服务 <Icon name="arrow" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </section>
                 <TranslationSettings
@@ -256,7 +274,7 @@ export function OptionsApp() {
                 />
               </>
             )}
-            <p id="status" className="status" role="status">
+            <p id="status" className="status" role="status" data-error={/失败|无法/.test(status)}>
               {status}
             </p>
           </div>

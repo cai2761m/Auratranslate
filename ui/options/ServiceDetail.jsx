@@ -39,7 +39,7 @@ export function ServiceDetail({
         <div className="service-detail-head">
           <div>
             <p className="section-kicker" id="detail-kind">
-              自定义供应方
+              OpenAI Compatible
             </p>
             <h3 id="detail-name">{service?.name || ""}</h3>
           </div>
@@ -63,7 +63,7 @@ export function ServiceDetail({
           </div>
         </div>
         <p className="detail-description" id="detail-description">
-          在此修改密钥和 API 地址；点击编辑维护名称与模型目录。
+          管理连接信息和可用模型。
         </p>
         <div id="detail-connection">
           <label className="field">
@@ -72,6 +72,7 @@ export function ServiceDetail({
               id="detail-api-key"
               type="password"
               autoComplete="off"
+              placeholder="输入 API Key"
               value={service?.apiKey || ""}
               onChange={(event) => onChange({ apiKey: event.target.value })}
             />
@@ -87,7 +88,7 @@ export function ServiceDetail({
               onChange={(event) => onChange({ baseUrl: event.target.value })}
             />
           </label>
-          <label className="field">
+          <label className="field protocol-field">
             <span>API 协议</span>
             <input
               id="detail-protocol"

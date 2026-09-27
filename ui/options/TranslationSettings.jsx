@@ -39,11 +39,11 @@ export function TranslationSettings({
         <p className="section-kicker">
           {immersive ? "Webpage" : "YouTube / Google Drive"}
         </p>
-        <h2>{immersive ? "沉浸式翻译 API" : "实时字幕翻译 API"}</h2>
+        <h2>{immersive ? "沉浸式翻译" : "实时字幕"}</h2>
         <p>
           {immersive
-            ? "用于普通网页右侧小圆球触发的中英对照翻译。"
-            : "用于 YouTube 和 Google Drive 字幕抓取、预翻译及视频上的双语字幕叠加层。"}
+            ? "在阅读的位置，呈现自然的双语对照。"
+            : "为 YouTube 和 Google Drive 视频选择字幕翻译服务。"}
         </p>
       </div>
       {immersive ? (
@@ -127,7 +127,7 @@ export function TranslationSettings({
             update({ [`${prefix}JsonResponse`]: event.target.checked })
           }
         />
-        <span>请求 JSON 输出模式，不兼容时可关闭</span>
+        <span>JSON 输出模式<small>让模型返回结构化结果，服务不兼容时可关闭。</small></span>
       </label>
     </section>
   );

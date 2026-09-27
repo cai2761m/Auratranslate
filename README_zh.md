@@ -168,7 +168,9 @@ Windows 下如果 PowerShell 阻止执行 `npm.ps1`，改用 `npm.cmd ci` 和 `n
 
 界面源码位于 `ui/options/`、`ui/popup/` 和 `ui/shared/`，请勿直接编辑生成的 `options/options.js`、`popup/popup.js`。修改源码后应将重新构建的产物一并提交。`npm run dev` 监听源码并自动构建；`npm run build:check` 校验产物是否与源码一致，测试前也会执行此检查。
 
-`npm run preview` 在 `http://127.0.0.1:5174/options/options.html` 和 `/popup/popup.html` 提供本地界面预览，使用演示配置与模拟接口，不会调用真实 API。`npm run test:ui:browser` 使用已安装的 Chrome 检查生产构建、扩展脚本 CSP、桌面/手机布局、弹窗和交互。可设置环境变量 `UI_BROWSER=msedge` 使用 Edge。这些检查不能替代实际安装扩展和 Firefox Android 验证。
+共享配色、字体和深浅色主题位于 `ui/shared/theme.css`，打包扩展时需要与生成的脚本一起保留。
+
+`npm run preview` 在 `http://127.0.0.1:5174/options/options.html` 和 `/popup/popup.html` 提供本地界面预览，使用演示配置与模拟接口，不会调用真实 API。`npm run test:ui:browser` 使用已安装的 Chrome 检查生产构建、扩展脚本 CSP、深浅色主题、桌面/手机布局、弹窗和交互；同时在真实渲染的测试页面检查悬浮球的背景适配、进度状态、键盘操作、拖动和减少动画偏好。可设置环境变量 `UI_BROWSER=msedge` 使用 Edge。这些检查不能替代实际安装扩展和 Firefox Android 验证。
 
 测试覆盖字幕解析、配置保存、智能断句、缓存、网页提取与格式保留、标签页生命周期恢复、消息超时和字幕拖动。测试模拟浏览器行为，真实 API 与设备验证需另外进行。
 

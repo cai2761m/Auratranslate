@@ -1,0 +1,62 @@
+:root {
+  color-scheme: light dark;
+  font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 14px;
+  color: #292735;
+  background: #f6f6f9;
+  --canvas: #f6f6f9;
+  --surface: #ffffff;
+  --subtle: #f9f9fc;
+  --ink: #292735;
+  --muted: #737080;
+  --border: #e8e7ee;
+  --input-border: #dcdbe5;
+  --accent: #7056ce;
+  --accent-hover: #5f46bc;
+  --accent-text: #664abd;
+  --soft: #f0ebfc;
+  --focus: #b3a0ea;
+  --success: #26775d;
+  --danger: #bf4359;
+  --danger-soft: #fff1f3;
+  --shadow: 0 4px 24px #24203705;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, select { font: inherit; }
+button, input, select { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+button, select, input { transition: border-color .15s, background-color .15s, box-shadow .15s; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+button:disabled, input:disabled, select:disabled { cursor: default; opacity: .55; }
+button, input, select { color: inherit; }
+[hidden] { display: none !important; }
+.ui-icon { width: 20px; height: 20px; flex-shrink: 0; vertical-align: middle; }
+.brand { display: flex; align-items: center; gap: 11px; }
+.brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--accent); color: #fff; }
+.brand-mark .ui-icon { width: 23px; height: 23px; }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --canvas: #19191f;
+    --surface: #222229;
+    --subtle: #282830;
+    --ink: #eeedf4;
+    --muted: #a4a1b1;
+    --border: #36353f;
+    --input-border: #45434f;
+    --accent: #8060d0;
+    --accent-hover: #7957c8;
+    --accent-text: #bea6fb;
+    --soft: #363046;
+    --focus: #8f78c8;
+    --success: #80cfad;
+    --danger: #f29eac;
+    --danger-soft: #402a33;
+    --shadow: 0 4px 24px #00000012;
+    color: var(--ink);
+    background: var(--canvas);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

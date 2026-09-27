@@ -23,11 +23,11 @@
     const ball = document.createElement("button");
     ball.type = "button";
     ball.className = "ytbt-immersive-ball";
-    ball.setAttribute("aria-label", "Immersive translate");
-    ball.title = "Immersive translate";
+    ball.setAttribute("aria-label", "翻译当前网页");
+    ball.title = "翻译当前网页 · 拖动调整位置";
 
-    ball.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-      <path d="M12.87 15.07l-2.54-2.51.03-.03c1.74-1.94 2.98-4.17 3.71-6.53H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/>
+    ball.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="m4 5 12 0M10 3v2M7 5c0 5 3 8 7 10M13 5c0 5-3 8-8 11M14 20l4-10 4 10M15.5 17h5"/>
     </svg>`;
 
     ballContainer.appendChild(ball);
@@ -42,6 +42,8 @@
     ballContainer.addEventListener("click", handleBallClick);
     ballContainer.addEventListener("pointerenter", handleControlPointerEnter);
     ballContainer.addEventListener("pointerleave", handleControlPointerLeave);
+    ball.addEventListener("focus", handleControlPointerEnter);
+    ball.addEventListener("blur", handleControlPointerLeave);
     panel.addEventListener("pointerenter", handleControlPointerEnter);
     panel.addEventListener("pointerleave", handleControlPointerLeave);
     document.body.appendChild(ballContainer);
@@ -87,6 +89,7 @@
     const pageElement = layers.find((element) => !element.closest?.("[data-ytbt-immersive-root]"));
     const brightness = samplePageBrightness(pageElement);
     state.ball.dataset.ytbtTheme = brightness >= 0.5 ? "light" : "dark";
+    if (state.panel) state.panel.dataset.ytbtTheme = state.ball.dataset.ytbtTheme;
   }
 
   function samplePageBrightness(element) {
@@ -300,7 +303,7 @@
       state.ball.style.top = `${topPct}%`;
     }
     if (state.panel) {
-      state.panel.style.top = `min(calc(${topPct}% + 24px), calc(100vh - 64px))`;
+      state.panel.style.top = `min(calc(${topPct}% + 30px), calc(100vh - 64px))`;
     }
   }
 
@@ -336,6 +339,16 @@
       return;
     }
     state.ball.dataset.ytbtState = mode;
+    const button = state.ball.querySelector("button");
+    if (button) {
+      const label = mode === "translating" ? "正在翻译"
+        : mode === "done" ? "隐藏网页译文"
+        : mode === "error" ? "翻译失败，点击重试"
+        : state.translated ? "显示网页译文" : "翻译当前网页";
+      button.setAttribute("aria-label", label);
+      button.setAttribute("aria-busy", String(mode === "translating"));
+      button.title = `${label} · 拖动调整位置`;
+    }
   }
 
   // The panel is a hover surface: translation progress is recorded here but is

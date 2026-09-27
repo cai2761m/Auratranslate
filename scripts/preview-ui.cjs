@@ -15,7 +15,7 @@ function createPreviewServer() {
       url.pathname === "/" ? "options/options.html" : url.pathname.slice(1);
     if (file === "preview.js") file = "scripts/preview-ui-browser.js";
     if (
-      !/^(?:(?:options|popup)\/(?:options|popup)\.(?:html|css|js)|src\/shared(?:-[a-z]+)?\.js|scripts\/preview-ui-browser\.js)$/.test(
+      !/^(?:(?:options|popup)\/(?:options|popup)\.(?:html|css|js)|ui\/shared\/theme\.css|src\/shared(?:-[a-z]+)?\.js|scripts\/preview-ui-browser\.js)$/.test(
         file,
       )
     ) {

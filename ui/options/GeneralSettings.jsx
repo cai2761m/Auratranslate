@@ -13,9 +13,9 @@ export function GeneralSettings({ settings, update, clearCache, hidden }) {
       <div className="section-heading">
         <p className="section-kicker">General</p>
         <h2>通用设置</h2>
-        <p>控制语言、LLM 智能断句、专业术语、字幕大小、ASR 纠错和字幕开关。</p>
+        <p>按照你的阅读习惯，调整翻译与字幕显示。</p>
       </div>
-
+      <h3 className="preference-heading">翻译与处理</h3>
       <div className="grid">
         <label className="field">
           <span>字幕翻译范围</span>
@@ -62,7 +62,7 @@ export function GeneralSettings({ settings, update, clearCache, hidden }) {
             update({ ["llmSentenceSegmentationEnabled"]: event.target.checked })
           }
         />
-        <span>启用 LLM 智能断句，先合并跨字幕的完整句子再翻译（默认开启）</span>
+        <span>智能断句<small>先合并跨字幕的完整句子，再进行翻译。</small></span>
       </label>
 
       <label className="toggle">
@@ -74,7 +74,7 @@ export function GeneralSettings({ settings, update, clearCache, hidden }) {
             update({ ["asrCorrectionEnabled"]: event.target.checked })
           }
         />
-        <span>启用 AI ASR 纠错，修正明显语音识别错误</span>
+        <span>语音识别纠错<small>使用 AI 修正字幕中明显的识别错误。</small></span>
       </label>
 
       <label className="toggle">
@@ -87,10 +87,11 @@ export function GeneralSettings({ settings, update, clearCache, hidden }) {
           }
         />
         <span>
-          字幕翻译中显示专业术语原文，例如“翻译 (Translation)”（默认开启）
+          保留专业术语原文<small>在译文中对照显示，例如“翻译 (Translation)”。</small>
         </span>
       </label>
 
+      <h3 className="preference-heading">语言与显示</h3>
       <div className="grid">
         <label className="field">
           <span>源语言</span>
@@ -154,7 +155,7 @@ export function GeneralSettings({ settings, update, clearCache, hidden }) {
             update({ ["subtitleEnabled"]: event.target.checked })
           }
         />
-        <span>启用插件字幕并隐藏 YouTube / Google Drive 原生字幕</span>
+        <span>显示双语字幕<small>使用插件字幕替换 YouTube / Google Drive 原生字幕。</small></span>
       </label>
 
       <div className="cache-settings">

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "../shared/Icon";
 import {
   api,
   Core,
@@ -190,14 +191,22 @@ export function PopupApp() {
       <header className="popup-header">
         <div className="brand">
           <span className="brand-mark" aria-hidden="true">
-            译
+            <Icon name="translate" />
           </span>
-          <h1>AuraTranslate</h1>
+          <div>
+            <h1>AuraTranslate</h1>
+            <p className="brand-caption">让阅读跨越语言</p>
+          </div>
         </div>
         <span id="version" className="version">
           v{chrome.runtime.getManifest().version}
         </span>
       </header>
+      <div className="current-page">
+        <Icon name="globe" />
+        <span>{hostname || "当前页面"}</span>
+        <span className="page-kind">网页翻译</span>
+      </div>
       <section className="translation-controls" aria-label="网页翻译">
         <div className="language-pair">
           <label className="select-field">
@@ -220,7 +229,7 @@ export function PopupApp() {
             </select>
           </label>
           <span className="direction" aria-hidden="true">
-            →
+            <Icon name="arrow" />
           </span>
           <label className="select-field">
             <span>译文语言</span>
@@ -241,6 +250,7 @@ export function PopupApp() {
             </select>
           </label>
         </div>
+        <div className="service-card">
         <label className="select-field service-field">
           <span>翻译服务</span>
           <select
@@ -297,6 +307,7 @@ export function PopupApp() {
             {hint}
           </small>
         </label>
+        </div>
         <div className="translate-actions">
           <button
             id="display-mode-toggle"
@@ -318,6 +329,7 @@ export function PopupApp() {
             <span id="mode-icon" aria-hidden="true">
               {translation ? "A" : "文/A"}
             </span>
+            <span className="mode-label">{translation ? "仅译文" : "双语"}</span>
           </button>
           <button
             id="translate-page"
@@ -326,9 +338,7 @@ export function PopupApp() {
             disabled={disabled || running || !page?.ok}
             onClick={translate}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="m13 2-9 12h7l-1 8 10-13h-7z" />
-            </svg>
+            {running ? <span className="button-spinner" aria-hidden="true" /> : <Icon name="translate" />}
             <span id="translate-label">
               {running ? "正在翻译…" : "翻译当前网页"}
             </span>
@@ -351,11 +361,8 @@ export function PopupApp() {
           type="button"
           onClick={openSettings}
         >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="m9 3-1 3-3 1-2 3 2 2-1 3 3 2 3-1 2 3 3-1 1-3 3-1 1-3-3-2V7l-3-1-2-3z" />
-            <circle cx="11" cy="11" r="3" />
-          </svg>
-          设置
+          <Icon name="settings" />
+          全部设置
         </button>
         <button
           id="more-toggle"
@@ -365,10 +372,8 @@ export function PopupApp() {
           aria-controls="more-panel"
           onClick={() => setMore(!more)}
         >
-          更多功能
-          <svg className="chevron" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="m7 10 5 5 5-5" />
-          </svg>
+          {more ? "收起偏好" : "网站与偏好"}
+          <Icon name="chevron" className="chevron" />
         </button>
       </footer>
       <section

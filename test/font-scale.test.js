@@ -1,9 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
-const path = require("node:path");
-const vm = require("node:vm");
 const Core = require("../src/shared.js");
+const { mount, setValue } = require("../scripts/ui-test-helpers.cjs");
 
 test("font scale accepts smaller mobile sizes, finer steps, and larger sizes", () => {
   for (const scale of [0.3, 0.35, 0.5, 0.65, 0.7, 1, 1.8, 2, 3]) {
@@ -12,79 +10,55 @@ test("font scale accepts smaller mobile sizes, finer steps, and larger sizes", (
   }
   assert.equal(Core.normalizeFontScale(-1), 0.3);
   assert.equal(Core.normalizeFontScale(4), 3);
-  for (const invalid of [undefined, null, "", "invalid", NaN, Infinity, true]) {
+  for (const invalid of [undefined, null, "", "invalid", NaN, Infinity, true])
     assert.equal(Core.normalizeFontScale(invalid), 1);
-  }
 });
 
-async function optionsPage(storage) {
-  const elements = new Map();
-  for (const id of ["settings-form", "fontScale", "fontScaleValue", "status", "subtitleTranslationMode", "subtitleLookAheadMinutes"]) {
-    elements.set(`#${id}`, {
-      value: "", textContent: "", listeners: {},
-      addEventListener(type, callback) { this.listeners[type] = callback; }
-    });
-  }
-  const context = vm.createContext({
-    YTBTCore: Core,
-    document: { querySelector(selector) { return elements.get(selector) || null; } },
-    chrome: { storage: { local: {
-      get(defaults, callback) { callback({ ...defaults, ...storage }); },
-      set(values, callback) { Object.assign(storage, values); callback(); },
-      remove(keys, callback) {
-        for (const key of Array.isArray(keys) ? keys : [keys]) delete storage[key];
-        callback();
-      }
-    } } },
-    setTimeout() {}
-  });
-  vm.runInContext(fs.readFileSync(path.join(__dirname, "../options/options.js"), "utf8"), context);
-  await Promise.resolve();
-  return Object.fromEntries([...elements].map(([key, value]) => [key.slice(1), value]));
-}
-
-test("settings slider saves and reloads fine-grained mobile sizes without rounding", async () => {
+test("React settings slider saves and reloads fine-grained mobile sizes", async (t) => {
   const storage = { fontScale: 0.7 };
-  const page = await optionsPage(storage);
-  assert.equal(page.fontScale.min, "0.3");
-  assert.equal(page.fontScale.max, "3");
-  assert.equal(page.fontScale.step, "0.05");
-  assert.equal(Number(page.fontScale.value), 0.7, "keep the user's previous setting");
+  const page = await mount(t, "options", { storage });
+  for (const [name, value] of [
+    ["min", Core.FONT_SCALE_MIN],
+    ["max", Core.FONT_SCALE_MAX],
+    ["step", Core.FONT_SCALE_STEP],
+  ]) {
+    assert.equal(page.field("fontScale").getAttribute(name), String(value));
+  }
+  assert.equal(
+    page.field("fontScale").getAttribute("aria-describedby"),
+    "fontScaleHint",
+  );
+  assert.ok(page.field("fontScaleHint"));
+  assert.equal(Number(page.field("fontScale").value), 0.7);
   for (const scale of [0.3, 0.55, 0.65, 3]) {
-    page.fontScale.value = String(scale);
-    page.fontScale.listeners.input();
-    assert.equal(page.fontScaleValue.textContent, `${scale.toFixed(2)}x`);
-    await page["settings-form"].listeners.submit({ preventDefault() {} });
+    setValue(page.field("fontScale"), String(scale));
+    assert.equal(
+      page.field("fontScaleValue").textContent,
+      `${scale.toFixed(2)}x`,
+    );
+    await page.save();
     assert.equal(storage.fontScale, scale);
-    const reopened = await optionsPage(storage);
-    assert.equal(Number(reopened.fontScale.value), scale);
-    assert.equal(reopened.fontScaleValue.textContent, `${scale.toFixed(2)}x`);
+    const reopened = await mount(t, "options", { storage });
+    assert.equal(Number(reopened.field("fontScale").value), scale);
   }
 });
 
-test("HTML slider bounds match shared validation and its hint is accessible", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../options/options.html"), "utf8");
-  const input = html.match(/<input id="fontScale"[^>]+>/)[0];
-  for (const [name, value] of [["min", Core.FONT_SCALE_MIN], ["max", Core.FONT_SCALE_MAX], ["step", Core.FONT_SCALE_STEP]]) {
-    assert.ok(input.includes(`${name}="${value}"`));
-  }
-  assert.match(input, /aria-describedby="fontScaleHint"/);
-  assert.match(html, /id="fontScaleHint"/);
-});
-
-test("subtitle scope and lookahead settings save and reload", async () => {
+test("subtitle scope and lookahead settings save and reload", async (t) => {
   const storage = {};
-  const page = await optionsPage(storage);
-  assert.equal(page.subtitleTranslationMode.value, "economy");
-  assert.equal(page.subtitleLookAheadMinutes.value, "2");
+  const page = await mount(t, "options", { storage });
+  assert.equal(page.field("subtitleTranslationMode").value, "economy");
+  assert.equal(page.field("subtitleLookAheadMinutes").value, "2");
   for (const mode of ["full", "economy"]) {
     for (const minutes of [1, 2, 3]) {
-      page.subtitleTranslationMode.value = mode;
-      page.subtitleLookAheadMinutes.value = String(minutes);
-      await page["settings-form"].listeners.submit({ preventDefault() {} });
-      const reopened = await optionsPage(storage);
-      assert.equal(reopened.subtitleTranslationMode.value, mode);
-      assert.equal(reopened.subtitleLookAheadMinutes.value, String(minutes));
+      setValue(page.field("subtitleTranslationMode"), mode);
+      setValue(page.field("subtitleLookAheadMinutes"), String(minutes));
+      await page.save();
+      const reopened = await mount(t, "options", { storage });
+      assert.equal(reopened.field("subtitleTranslationMode").value, mode);
+      assert.equal(
+        reopened.field("subtitleLookAheadMinutes").value,
+        String(minutes),
+      );
     }
   }
 });

@@ -36,11 +36,11 @@ In Chrome:
 3. Click **Load unpacked** and select the `auratranslate` folder containing `manifest.json`.
 4. Open AuraTranslate from the extensions menu and click **设置** (Settings).
 
-No build step or npm installation is needed to load the extension. Node.js dependencies are only needed for development tests.
+The repository includes the built React UI, so loading the extension does not require npm. Developers must rebuild after editing the UI sources.
 
 ### 2. Configure your API
 
-The settings page has four independent sub-pages on the left: **翻译服务** (Translation services), **实时字幕** (Real-time subtitles), **沉浸式翻译** (Immersive translation) and **通用设置** (General). Only one is shown at a time instead of stacking every group into one long page. The `#translation-services`, `#realtime-api`, `#immersive-api` and `#general-settings` hashes open a specific sub-page directly, and the browser back/forward buttons move between them. **保存设置** (Save) and **清空翻译缓存** (Clear cache) apply to every sub-page.
+The settings page has four independent sub-pages on the left: **翻译服务** (Translation services), **实时字幕** (Real-time subtitles), **沉浸式翻译** (Immersive translation) and **通用设置** (General). Only one is shown at a time instead of stacking every group into one long page. The `#translation-services`, `#realtime-api`, `#immersive-api` and `#general-settings` hashes open a specific sub-page directly, and the browser back/forward buttons move between them. Changes save automatically; **清空翻译缓存** (Clear cache) clears both subtitle and webpage translations.
 
 Add providers on the **翻译服务** page first: click **添加自定义供应方** (Add custom provider) and fill in the dialog:
 
@@ -69,7 +69,7 @@ Google translates complete paragraphs with inline formatting markers, so code, l
 
 After upgrading, obsolete Google translations of formatted paragraphs are skipped during cache hydration and replaced on the next translation run. AI translations and ordinary plain-text caches remain reusable; no full cache clearing is needed. Google requests are limited to two concurrent requests and a 15-second deadline. The keyless endpoint cools down for 60 seconds after a request failure while the background worker remains active. Subtitle translation is unaffected.
 
-Click **保存设置** (Save settings). The extension does not include an API key; API usage is billed according to your provider's terms.
+Wait for the automatic-save confirmation after making changes. The extension does not include an API key; API usage is billed according to your provider's terms.
 
 ### 3. Start translating
 
@@ -158,14 +158,19 @@ When reporting an issue, include the browser/version, page URL, reproduction ste
 
 ## Development
 
-The extension uses plain JavaScript, HTML, and CSS. Tests use Node's built-in test runner and jsdom. Use a Node.js version accepted by the locked jsdom dependency: `^22.22.2`, `^24.15.0`, or `>=26.0.0`.
+The options page and popup use React with JavaScript/JSX and the existing CSS. Background scripts, content scripts, and the translation engine remain plain JavaScript. esbuild bundles React locally; no remote scripts or runtime compilation are used. Use a Node.js version accepted by the locked jsdom dependency: `^22.22.2`, `^24.15.0`, or `>=26.0.0`.
 
 ```sh
 npm ci
+npm run build
 npm test
 ```
 
 On Windows, use `npm.cmd ci` and `npm.cmd test` if PowerShell blocks `npm.ps1`.
+
+Edit `ui/options/`, `ui/popup/`, and `ui/shared/`; do not edit the generated `options/options.js` or `popup/popup.js`. Commit the rebuilt bundles with source changes. `npm run dev` rebuilds on changes; `npm run build:check` (also run before tests) rejects stale bundles.
+
+Run `npm run preview` to open the UI at `http://127.0.0.1:5174/options/options.html` or `/popup/popup.html`. This local preview uses synthetic settings and mocked provider responses, never real API requests. `npm run test:ui:browser` checks the production bundles in installed Chrome with the extension's script CSP, desktop/mobile layouts, dialogs, and popup interactions. Set `UI_BROWSER=msedge` to use installed Edge. This does not replace testing the installed extension or Firefox Android.
 
 The test suite covers caption parsing, configuration persistence, sentence segmentation, caching, webpage extraction and formatting, tab lifecycle recovery, message timeouts, and subtitle dragging. Tests simulate browser behavior; live API and device checks remain separate.
 
@@ -202,9 +207,12 @@ src/
   page-bridge.js    YouTube player metadata and caption request bridge
   overlay.css       Subtitle styles
   immersive.css     Webpage translation styles
-options/            Settings interface
-popup/              Subtitle switch and settings entry point
+ui/options/         React settings components, autosave, provider/model dialogs
+ui/popup/           React popup and webpage controls
+ui/shared/          Storage adapters, compatible settings, accessible modal
+options/            Settings HTML/CSS and generated JS bundle
+popup/              Popup HTML/CSS and generated JS bundle
 test/               Automated tests and fixtures
 ```
 
-No build step is required. Browser scripts load in the order declared in `manifest.json`; the options and popup HTML also list the shared modules before `shared.js`. Chrome imports background dependencies synchronously, while Firefox uses the equivalent `background.scripts` list. Keep both lists in sync when adding a module. Shared modules expose the existing `YTBTCore` API, and webpage modules use a separate `YTBTImmersive` namespace to avoid subtitle-script name collisions. Node tests can continue to use `require("./src/shared.js")`.
+Browser scripts load in the order declared in `manifest.json`; the options and popup HTML also list the shared modules before `shared.js` and the UI bundle. React is loaded only in those two extension pages. Chrome imports background dependencies synchronously, while Firefox uses the equivalent `background.scripts` list. Keep both lists in sync when adding a module. Shared modules expose the existing `YTBTCore` API, and webpage modules use a separate `YTBTImmersive` namespace to avoid subtitle-script name collisions. Node tests can continue to use `require("./src/shared.js")`.

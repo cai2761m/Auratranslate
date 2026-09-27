@@ -36,11 +36,11 @@ git clone https://github.com/cai2761m/auratranslate.git
 3. 点击 **加载已解压的扩展程序**，选择包含 `manifest.json` 的 `auratranslate` 文件夹。
 4. 从扩展菜单打开 AuraTranslate，点击 **设置**。
 
-加载扩展不需要构建，也不需要安装 npm 依赖；Node.js 依赖仅用于开发测试。
+仓库包含已构建的 React 界面，下载后可直接加载扩展，无需安装 npm 依赖。开发时修改界面源码后需要重新构建。
 
 ### 2. 配置 API
 
-设置页左侧有四个独立子页面：**翻译服务**、**实时字幕**、**沉浸式翻译**、**通用设置**；一次只显示一页，不再把全部分组串成一长条。地址栏的 `#translation-services`、`#realtime-api`、`#immersive-api`、`#general-settings` 可直接定位到某一页，浏览器前进/后退也能在子页面间切换。**保存设置** 与 **清空翻译缓存** 对所有子页面同时生效。
+设置页左侧有四个独立子页面：**翻译服务**、**实时字幕**、**沉浸式翻译**、**通用设置**；一次只显示一页，不再把全部分组串成一长条。地址栏的 `#translation-services`、`#realtime-api`、`#immersive-api`、`#general-settings` 可直接定位到某一页，浏览器前进/后退也能在子页面间切换。修改会自动保存；**清空翻译缓存** 对字幕和网页翻译同时生效。
 
 先在 **翻译服务** 页添加供应方：点击 **添加自定义供应方**，在弹窗里填写：
 
@@ -67,7 +67,7 @@ git clone https://github.com/cai2761m/auratranslate.git
 
 Google 翻译在本地保留代码、链接和强调格式，分段翻译格式之间的文字，因此格式边界附近的上下文可能减少。Google 请求最多并发 2 个，单次请求最多等待 15 秒；免 Key 接口失败后，在当前后台进程内冷却 60 秒。字幕翻译不受影响。
 
-最后点击 **保存设置**。扩展不附带 API Key，接口调用费用由你使用的服务商按其规则收取。
+修改后等待页面显示“设置已自动保存”。扩展不附带 API Key，接口调用费用由你使用的服务商按其规则收取。
 
 ### 3. 开始翻译
 
@@ -156,14 +156,19 @@ Android 上使用 Firefox 网页版视频和经过 Mozilla 签名的扩展包；
 
 ## 开发
 
-扩展使用原生 JavaScript、HTML 和 CSS，测试使用 Node 内置测试运行器与 jsdom。Node.js 版本需符合锁定的 jsdom 依赖要求：`^22.22.2`、`^24.15.0` 或 `>=26.0.0`。
+设置页和弹出页使用 React、JavaScript/JSX 和现有 CSS；后台、内容脚本和翻译引擎继续使用原生 JavaScript。esbuild 将 React 打包为扩展本地脚本，不加载远程脚本，也不在浏览器中编译 JSX。Node.js 版本需符合锁定的 jsdom 依赖要求：`^22.22.2`、`^24.15.0` 或 `>=26.0.0`。
 
 ```sh
 npm ci
+npm run build
 npm test
 ```
 
 Windows 下如果 PowerShell 阻止执行 `npm.ps1`，改用 `npm.cmd ci` 和 `npm.cmd test`。
+
+界面源码位于 `ui/options/`、`ui/popup/` 和 `ui/shared/`，请勿直接编辑生成的 `options/options.js`、`popup/popup.js`。修改源码后应将重新构建的产物一并提交。`npm run dev` 监听源码并自动构建；`npm run build:check` 校验产物是否与源码一致，测试前也会执行此检查。
+
+`npm run preview` 在 `http://127.0.0.1:5174/options/options.html` 和 `/popup/popup.html` 提供本地界面预览，使用演示配置与模拟接口，不会调用真实 API。`npm run test:ui:browser` 使用已安装的 Chrome 检查生产构建、扩展脚本 CSP、桌面/手机布局、弹窗和交互。可设置环境变量 `UI_BROWSER=msedge` 使用 Edge。这些检查不能替代实际安装扩展和 Firefox Android 验证。
 
 测试覆盖字幕解析、配置保存、智能断句、缓存、网页提取与格式保留、标签页生命周期恢复、消息超时和字幕拖动。测试模拟浏览器行为，真实 API 与设备验证需另外进行。
 
@@ -200,9 +205,12 @@ src/
   page-bridge.js    YouTube 播放器元数据与字幕请求桥接
   overlay.css       字幕样式
   immersive.css     网页翻译样式
-options/            设置界面
-popup/              字幕开关与设置入口
+ui/options/         React 设置组件、自动保存、供应方与模型弹窗
+ui/popup/           React 弹出页与网页翻译控制
+ui/shared/          存储适配、兼容配置与无障碍弹窗
+options/            设置页 HTML/CSS 和生成的 JS
+popup/              弹出页 HTML/CSS 和生成的 JS
 test/               自动化测试与测试数据
 ```
 
-无需构建步骤。浏览器按 `manifest.json` 中的顺序加载脚本；设置页和弹窗 HTML 同样在 `shared.js` 前列出共享模块。Chrome 同步导入后台依赖，Firefox 使用对应的 `background.scripts` 列表，新增模块时需同步维护两处。共享模块保留原有 `YTBTCore` 接口，网页翻译模块使用独立的 `YTBTImmersive` 命名空间，避免与字幕脚本的变量冲突。Node 测试仍可使用 `require("./src/shared.js")`。
+浏览器按 `manifest.json` 中的顺序加载脚本；设置页和弹窗 HTML 在 `shared.js` 和界面产物前列出共享模块。React 只加载到这两个扩展页面。Chrome 同步导入后台依赖，Firefox 使用对应的 `background.scripts` 列表，新增模块时需同步维护两处。共享模块保留原有 `YTBTCore` 接口，网页翻译模块使用独立的 `YTBTImmersive` 命名空间，避免与字幕脚本的变量冲突。Node 测试仍可使用 `require("./src/shared.js")`。

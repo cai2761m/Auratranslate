@@ -402,6 +402,7 @@
   }
 
   function isExcludedFromTranslation(element) {
+    if (element.closest(App.MATH_SELECTOR)) return true;
     if (element.closest(SKIP_SELECTOR) || element.closest(OUTLINE_DECORATION_SELECTOR)) {
       return true;
     }
@@ -456,6 +457,11 @@
 
   function extractReadableText(element) {
     const clone = element.cloneNode(true);
+    // KaTeX contains both visual HTML and MathML with a TeX annotation. Read
+    // the formula once, before stripping its aria-hidden visual subtree.
+    for (const formula of clone.querySelectorAll(App.MATH_SELECTOR)) {
+      if (clone.contains(formula)) formula.replaceWith(document.createTextNode(App.mathSourceText(formula)));
+    }
     for (const injected of clone.querySelectorAll("[data-ytbt-immersive-translation], [aria-hidden='true']")) {
       injected.remove();
     }

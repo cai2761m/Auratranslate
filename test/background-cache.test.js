@@ -174,6 +174,53 @@ test("an empty truncated single-paragraph response gets one larger budget and ca
   assert.equal(fixture.fetchCount, 2);
 });
 
+test("formula paragraphs bypass legacy plain caches and persist protected formulas", async () => {
+  const fixture = createFixture();
+  const worker = fixture.startWorker();
+  const plain = "Binary search takes \\log n time.";
+  const formatted = "Binary search takes [[YTBT_MATH_0]]\\log n[[/YTBT_MATH_0]] time.";
+  await worker.request(immersiveMessage([plain]));
+  const message = immersiveMessage([], { items: [{ id: "formula", sourceText: plain, formattedText: formatted }] });
+  assert.equal((await worker.request({ ...message, cacheOnly: true })).items.length, 0);
+  fixture.hooks.fetch = (_url, options) => {
+    const payload = JSON.parse(options.body);
+    assert.match(payload.messages[0].content, /MATH markers represent complete formulas/);
+    assert.equal(JSON.parse(payload.messages[1].content).items[0].text, formatted);
+    return jsonResponse({ choices: [{ message: { content: JSON.stringify({ items: [{ id: "0",
+      translatedText: "耗时 [[YTBT_MATH_0]]altered formula[[/YTBT_MATH_0]]。" }] }) }, finish_reason: "stop" }] });
+  };
+  const response = await worker.request(message);
+  assert.equal(response.ok, true);
+  assert.equal(response.items[0].translatedText, "耗时 [[YTBT_MATH_0]]\\log n[[/YTBT_MATH_0]]。");
+  const cached = await fixture.startWorker().request({ ...message, cacheOnly: true });
+  assert.equal(cached.items[0].translatedText, response.items[0].translatedText);
+  assert.equal(fixture.fetchCount, 2);
+});
+
+test("AI responses that lose formula markers fail without caching corrupted math", async () => {
+  const fixture = createFixture();
+  fixture.hooks.fetch = () => jsonResponse({ choices: [{ message: { content: JSON.stringify({
+    items: [{ id: "0", translatedText: "耗时 logn\\log n。" }]
+  }) }, finish_reason: "stop" }] });
+  const worker = fixture.startWorker();
+  const message = immersiveMessage([], { items: [{ id: "formula", sourceText: "Search takes log n time.",
+    formattedText: "Search takes [[YTBT_MATH_0]]\\log n[[/YTBT_MATH_0]] time." }] });
+  const response = await worker.request(message);
+  assert.equal(response.ok, false);
+  assert.match(response.errors[0].message, /公式标记/);
+  assert.equal((await worker.request({ ...message, cacheOnly: true })).items.length, 0);
+  assert.equal(fixture.fetchCount, 1);
+});
+
+test("Google treats formulas as literal content inside protected markers", async () => {
+  const fixture = createFixture({ immersiveTranslationService: "google-free" });
+  fixture.hooks.fetch = () => freeGoogleResponse("耗时 [[YTBT_MATH_0]]错误公式[[/YTBT_MATH_0]]。");
+  const result = await fixture.startWorker().request(immersiveMessage([], { items: [{ id: "formula",
+    sourceText: "Search takes log n time.", formattedText: "Search takes [[YTBT_MATH_0]]\\log n[[/YTBT_MATH_0]] time." }] }));
+  assert.equal(result.ok, true);
+  assert.equal(result.items[0].translatedText, "耗时 [[YTBT_MATH_0]]\\log n[[/YTBT_MATH_0]]。");
+});
+
 test("truncation recovery is bounded and never caches incomplete content", async (t) => {
   for (const [label, texts, expectedCalls] of [
     ["single paragraph", ["Binary search trees."], 2],

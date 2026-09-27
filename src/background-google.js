@@ -67,7 +67,7 @@ function restoreGoogleFormatting(source, translated) {
   }
   // Identifiers and line breaks come from the page even if Google translated
   // their contents. Everything else stays in the provider's translated order.
-  return translated.replace(/\[\[YTBT_((?:CODE|KBD|SAMP|BR)_\d+)\]\][\s\S]*?\[\[\/YTBT_\1\]\]/g,
+  return translated.replace(/\[\[YTBT_((?:CODE|KBD|SAMP|BR|MATH)_\d+)\]\][\s\S]*?\[\[\/YTBT_\1\]\]/g,
     (_, key) => `[[YTBT_${key}]]${expected.get(key).inner}[[/YTBT_${key}]]`);
 }
 

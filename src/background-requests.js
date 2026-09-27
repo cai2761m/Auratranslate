@@ -189,7 +189,7 @@ async function translateBatch({
       : mode === "immersive"
         ? `You are an immersive webpage translation engine. Translate ${sourceLabel} webpage text into natural ${targetLabel}. ` +
           "Do not summarize, omit, merge, or split items. Preserve URLs, code identifiers, numbers, names, product names, and formatting-sensitive symbols. " +
-          "Preserve every paired [[YTBT_TAG_N]] and [[/YTBT_TAG_N]] formatting marker exactly once, with correct nesting, around the corresponding translated words; markers may move with those words. Translate text inside emphasis and link markers, but keep text inside CODE, KBD and SAMP markers unchanged. Keep BR marker pairs empty. Do not add HTML or Markdown formatting. " +
+          "Preserve every paired [[YTBT_TAG_N]] and [[/YTBT_TAG_N]] formatting marker exactly once, with correct nesting, around the corresponding translated words; markers may move with those words. Translate text inside emphasis and link markers, but keep text inside CODE, KBD, SAMP and MATH markers unchanged. MATH markers represent complete formulas; never expand, duplicate or rewrite them. Keep BR marker pairs empty. Do not add HTML or Markdown formatting. " +
           "Keep the translation faithful and readable as a bilingual paragraph shown under the original text. " +
           outputInstruction
         : `You are a subtitle translation engine. Translate ${sourceLabel} subtitles into natural ${targetLabel}. ` +
@@ -338,6 +338,16 @@ async function translateBatch({
 
   if (!filtered.length) {
     throw new Error(`${translationConfig.providerLabel} response did not contain usable translations.`);
+  }
+
+  if (mode === "immersive") {
+    for (const item of filtered) {
+      const source = cues[Number(item.id)].sourceText;
+      if (/\[\[YTBT_MATH_\d+\]\]/.test(source)) {
+        try { item.translatedText = restoreGoogleFormatting(source, item.translatedText); }
+        catch (_) { throw new Error("模型未完整保留公式标记，请更换模型后重试。"); }
+      }
+    }
   }
 
   return mode === "immersive"

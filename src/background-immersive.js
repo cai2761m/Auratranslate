@@ -59,7 +59,7 @@ async function handleImmersiveTranslate(message) {
     const legacy = storedItems[cue.plainId];
     if (usableImmersiveCache(stored, cue.sourceText, cue.hasFormatting)) {
       results.set(cue.id, { translatedText: stored.translatedText, translationProvider: stored.translationProvider, cached: true });
-    } else if (usableImmersiveCache(legacy, cue.plainText, cue.hasFormatting)) {
+    } else if (!/\[\[YTBT_MATH_\d+\]\]/.test(cue.sourceText) && usableImmersiveCache(legacy, cue.plainText, cue.hasFormatting)) {
       results.set(cue.id, { translatedText: legacy.translatedText, translationProvider: legacy.translationProvider, cached: true });
     } else if (message.cacheOnly === true && completedCueTranslations.has(inFlightCueKey(cacheKey, cue.id, cue.sourceText))) {
       // A successful provider response is still usable while storage is slow
@@ -122,6 +122,10 @@ async function immersiveFingerprint(value) {
 
 function usableImmersiveCache(entry, sourceText, hasFormatting) {
   if (!entry || entry.sourceText !== sourceText || typeof entry.translatedText !== "string" || !entry.translatedText.trim()) return false;
+  if (/\[\[YTBT_MATH_\d+\]\]/.test(sourceText)) {
+    try { restoreGoogleFormatting(sourceText, entry.translatedText); }
+    catch (_) { return false; }
+  }
   // Only obsolete free-translation formatting results need replacing. Preserve AI and
   // plain-text caches, and never initiate a request during cache-only probes.
   if (!hasFormatting) return true;

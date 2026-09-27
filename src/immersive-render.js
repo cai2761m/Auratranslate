@@ -18,6 +18,42 @@
     return label;
   }
 
+  function mathSourceText(node) {
+    const tex = node.querySelector('annotation[encoding="application/x-tex"]');
+    if (tex) return tex.textContent.trim();
+    const source = (node.matches("math") ? node : node.querySelector("math")) || node;
+    const clone = source.cloneNode(true);
+    for (const annotation of clone.querySelectorAll("annotation, annotation-xml")) annotation.remove();
+    return clone.textContent.trim();
+  }
+
+  function copyMath(node) {
+    // Copy only inert formula layout from the source page, never model HTML.
+    // KaTeX's classes, inline geometry, MathML and SVG paths are all needed.
+    const tags = new Set("span math semantics annotation mrow mi mn mo mtext mspace ms mfrac msqrt mroot mstyle merror mpadded mphantom mfenced menclose msub msup msubsup munder mover munderover mmultiscripts mprescripts none mtable mtr mtd maligngroup malignmark svg g path line rect circle ellipse polygon polyline defs clipPath".toLowerCase().split(" "));
+    const attributes = new Set("class aria-hidden aria-label role encoding display mathvariant mathsize mathcolor mathbackground stretchy symmetric fence separator lspace rspace largeop movablelimits accent accentunder linethickness bevelled numalign denomalign scriptlevel displaystyle width height depth voffset rowalign columnalign rowspacing columnspacing columnspan rowspan notation open close separators viewbox preserveaspectratio d x y x1 x2 y1 y2 cx cy r rx ry points fill stroke stroke-width transform".split(" "));
+    function copy(source) {
+      if (source.nodeType === Node.TEXT_NODE) return document.createTextNode(source.textContent);
+      if (source.nodeType !== Node.ELEMENT_NODE || !tags.has(source.localName.toLowerCase()) ||
+          !["http://www.w3.org/1999/xhtml", "http://www.w3.org/1998/Math/MathML", "http://www.w3.org/2000/svg"].includes(source.namespaceURI)) return null;
+      const target = document.createElementNS(source.namespaceURI, source.localName);
+      for (const attr of source.attributes) {
+        if (attributes.has(attr.name.toLowerCase()) && !/url\s*\(/i.test(attr.value)) target.setAttribute(attr.name, attr.value);
+      }
+      for (const property of Array.from(source.style || [])) {
+        const value = source.style.getPropertyValue(property);
+        if (/^(?:height|width|min-height|min-width|max-height|max-width|top|bottom|left|right|position|display|vertical-align|overflow|box-sizing|color|background-color|opacity|font(?:-.+)?|line-height|text-align|white-space|margin(?:-.+)?|padding(?:-.+)?|border(?:-.+)?|transform(?:-origin)?)$/.test(property) &&
+            !/url\s*\(|expression\s*\(|var\s*\(/i.test(value)) target.style.setProperty(property, value);
+      }
+      for (const child of source.childNodes) {
+        const cloned = copy(child);
+        if (cloned) target.appendChild(cloned);
+      }
+      return target;
+    }
+    return copy(node);
+  }
+
   function extractInlineFormatting(element) {
     const formats = new Map();
     const tags = new Set(["CODE", "KBD", "SAMP", "STRONG", "B", "EM", "I", "A", "S", "DEL", "U", "MARK", "SUB", "SUP", "BR"]);
@@ -25,6 +61,12 @@
       if (node.nodeType === Node.TEXT_NODE) return node.textContent;
       if (node.nodeType !== Node.ELEMENT_NODE || node.matches("[data-ytbt-immersive-translation], [aria-hidden='true'], script, style")) return "";
       if (node.matches(App.OUTLINE_DECORATION_SELECTOR)) return "";
+      if (node.matches(App.MATH_SELECTOR)) {
+        const key = `MATH_${formats.size}`;
+        const sourceText = mathSourceText(node);
+        formats.set(key, { template: copyMath(node), literal: true, math: true, sourceText });
+        return `[[YTBT_${key}]]${sourceText}[[/YTBT_${key}]]`;
+      }
       if (!tags.has(node.tagName)) return Array.from(node.childNodes, visit).join("");
       const key = `${node.tagName}_${formats.size}`;
       const template = document.createElement(node.tagName.toLowerCase());
@@ -75,7 +117,8 @@
       }
       if (closing) {
         const entry = stack.pop();
-        if (format.literal) entry.node.textContent = format.sourceText;
+        if (format.math) entry.node.replaceChildren(...format.template.cloneNode(true).childNodes);
+        else if (format.literal) entry.node.textContent = format.sourceText;
       } else {
         const node = format.template.cloneNode(false);
         stack[stack.length - 1].node.appendChild(node);
@@ -104,8 +147,8 @@
       // Some providers add Markdown backticks even to old plain-text input.
       while (before > start && plain[before - 1] === "`" && plain[end] === "`") { before -= 1; end += 1; }
       fallback.appendChild(document.createTextNode(plain.slice(start, before)));
-      const node = format.template.cloneNode(false);
-      node.textContent = format.sourceText;
+      const node = format.template.cloneNode(Boolean(format.math));
+      if (!format.math) node.textContent = format.sourceText;
       fallback.appendChild(node);
       start = end;
       index = end - 1;
@@ -187,6 +230,7 @@
   }
 
   Object.assign(App, {
+    mathSourceText,
     prepareOutlineLabel,
     extractInlineFormatting,
     clearExistingTranslations,

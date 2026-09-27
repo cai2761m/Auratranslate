@@ -58,5 +58,5 @@
     return Math.min(max, Math.max(min, value));
   }
 
-  Object.assign(App, { BATCH_CHAR_LIMIT, DEFAULT_BALL_TOP_PCT, state, pageIdentity, storageGet, storageSet, clamp });
+  Object.assign(App, { MATH_SELECTOR: ".katex, math", BATCH_CHAR_LIMIT, DEFAULT_BALL_TOP_PCT, state, pageIdentity, storageGet, storageSet, clamp });
 })();

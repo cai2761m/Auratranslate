@@ -771,6 +771,69 @@ test("malformed or missing formatting markers fall back to safe text and literal
   }
 });
 
+test("GitBook KaTeX is sent once and restored with its original visual and accessible formula", async (t) => {
+  const html = fs.readFileSync(path.join(__dirname, "fixtures/gitbook-bst-formula.html"), "utf8");
+  let original;
+  const { document, requests } = await translatePage(t, html, {
+    setup(window) { original = window.document.querySelector(".katex"); },
+    sendMessage(message) {
+      if (message.cacheOnly) return { ok: true, items: [] };
+      assert.equal(message.items.length, 1);
+      const item = message.items[0];
+      assert.equal((item.sourceText.match(/\\log n/g) || []).length, 1);
+      assert.doesNotMatch(item.sourceText, /log⁡n/);
+      assert.match(item.formattedText, /\[\[YTBT_MATH_0\]\]\\log n\[\[\/YTBT_MATH_0\]\]/);
+      return { ok: true, items: [{ id: item.id, translatedText:
+        "耗时 [[YTBT_MATH_0]]MODEL MUST NOT REWRITE THIS[[/YTBT_MATH_0]]。参阅[[YTBT_A_1]]链接[[/YTBT_A_1]]。" }] };
+    }
+  });
+  const translated = document.querySelector(".ytbt-immersive-text");
+  const formula = translated.querySelector(".katex");
+  assert.equal(requests.length, 2);
+  assert.equal(translated.querySelectorAll(".katex").length, 1);
+  assert.equal(formula.querySelector(".katex-html").textContent, "logn");
+  assert.equal(formula.querySelector(".strut").style.height, "0.8889em");
+  assert.equal(formula.querySelector(".strut").style.verticalAlign, "-0.1944em");
+  assert.equal(formula.querySelector("math").namespaceURI, "http://www.w3.org/1998/Math/MathML");
+  assert.equal(formula.querySelector("annotation").textContent, "\\log n");
+  assert.equal(formula.querySelector(".katex-html").getAttribute("aria-hidden"), "true");
+  assert.doesNotMatch(translated.textContent, /YTBT_|MODEL MUST/);
+  assert.equal(document.querySelector(".katex"), original, "original formula is never replaced or mutated");
+  assert.ok(translated.querySelector("a[href]"));
+});
+
+test("native MathML fractions and repeated formulas preserve structure when reordered", async (t) => {
+  const formula = '<math><mfrac><mi>a</mi><msup><mi>b</mi><mn>2</mn></msup></mfrac></math>';
+  const { document, requests } = await translatePage(t, `<main><p>Compare ${formula} with ${formula} in this equation.</p></main>`, {
+    sendMessage(message) {
+      if (message.cacheOnly) return { ok: true, items: [] };
+      return { ok: true, items: [{ id: message.items[0].id, translatedText:
+        "先看 [[YTBT_MATH_1]]ab2[[/YTBT_MATH_1]]，再看 [[YTBT_MATH_0]]ab2[[/YTBT_MATH_0]]。" }] };
+    }
+  });
+  assert.equal(requests[1].items.length, 1, "formula descendants are never separate translation blocks");
+  assert.equal(document.querySelectorAll(".ytbt-immersive-text math > mfrac > msup").length, 2);
+});
+
+test("formula copies strip active content while preserving SVG geometry", async (t) => {
+  const { document } = await translatePage(t, `<main><p>Read this formula in the example:
+    <span class="katex" id="formula" onclick="alert(1)" style="background-image:url(https://example.test/track)">
+      <span class="katex-html" aria-hidden="true"><svg viewBox="0 0 10 10"><path d="M0 0 L10 10" fill="currentColor" onload="alert(1)"></path><foreignObject><iframe src="https://example.test"></iframe></foreignObject></svg></span>
+      <math><mi href="javascript:alert(1)">x</mi><annotation-xml><img src="x" onerror="alert(1)"></annotation-xml></math>
+      <script>alert(1)</script>
+    </span>.</p></main>`, {
+    sendMessage: (message) => ({ ok: true, items: [{ id: message.items[0].id,
+      translatedText: "公式 [[YTBT_MATH_0]]x[[/YTBT_MATH_0]]。" }] })
+  });
+  const formula = document.querySelector(".ytbt-immersive-text .katex");
+  assert.equal(formula.querySelector("script, iframe, img, foreignObject, annotation-xml, [href], [id], [onload], [onerror], [onclick]"), null);
+  assert.equal(formula.hasAttribute("onclick"), false);
+  assert.equal(formula.hasAttribute("id"), false);
+  assert.equal(formula.style.backgroundImage, "");
+  assert.equal(formula.querySelector("svg").getAttribute("viewBox"), "0 0 10 10");
+  assert.equal(formula.querySelector("path").getAttribute("d"), "M0 0 L10 10");
+});
+
 test("formatting copies no active source attributes and keeps code-like HTML inert", async (t) => {
   const { document } = await translatePage(t, `<main><p>Compare <code>&lt;img src=x onerror=alert(1)&gt;</code>
     with <a href="javascript:alert(1)">this unsafe link</a> in the example.</p></main>`, {

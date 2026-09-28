@@ -7,6 +7,7 @@
   const { Core, state } = App;
 
   const BALL_EDGE_PADDING_PX = 8;
+  const BALL_DOCK_GAP_PX = 12;
   const BALL_DRAG_THRESHOLD_PX = 4;
   let themeObserver = null;
   let themeUpdateScheduled = false;
@@ -24,10 +25,8 @@
     ball.type = "button";
     ball.className = "ytbt-immersive-ball";
     ball.setAttribute("aria-label", "翻译当前网页");
-    ball.title = "翻译当前网页 · 拖动调整位置";
-
-    ball.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="m4 5 12 0M10 3v2M7 5c0 5 3 8 7 10M13 5c0 5-3 8-8 11M14 20l4-10 4 10M15.5 17h5"/>
+    ball.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M4 7h12M10 4v3M13.5 7c-.8 5-4.3 9-9.5 11M6.5 10c1.2 3.1 3.7 5.8 7 7.5M15 23l4.5-11L24 23M16.5 19h6"/>
     </svg>`;
 
     ballContainer.appendChild(ball);
@@ -42,6 +41,9 @@
     ballContainer.addEventListener("click", handleBallClick);
     ballContainer.addEventListener("pointerenter", handleControlPointerEnter);
     ballContainer.addEventListener("pointerleave", handleControlPointerLeave);
+    ballContainer.addEventListener("transitionend", (event) => {
+      if (event.target === ballContainer && event.propertyName === "right") updateBallTheme();
+    });
     ball.addEventListener("focus", handleControlPointerEnter);
     ball.addEventListener("blur", handleControlPointerLeave);
     panel.addEventListener("pointerenter", handleControlPointerEnter);
@@ -83,7 +85,7 @@
   function updateBallTheme() {
     if (!state.ball) return;
     const rect = state.ball.getBoundingClientRect();
-    const x = App.clamp(rect.left - 3, 0, Math.max(0, window.innerWidth - 1));
+    const x = App.clamp(rect.left + rect.width / 2, 0, Math.max(0, window.innerWidth - 1));
     const y = App.clamp(rect.top + rect.height / 2, 0, Math.max(0, window.innerHeight - 1));
     const layers = document.elementsFromPoint?.(x, y) || [];
     const pageElement = layers.find((element) => !element.closest?.("[data-ytbt-immersive-root]"));
@@ -97,12 +99,17 @@
     const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)").matches;
     let color = scheme.includes("dark") || prefersDark ? [0, 0, 0] : [255, 255, 255];
 
+    const backgrounds = [];
     for (let current = element; current; current = current.parentElement) {
       const background = parseRgba(getComputedStyle(current).backgroundColor);
       if (!background) continue;
+      backgrounds.push(background);
+      if (background[3] >= 1) break;
+    }
+    // Paint ancestors first so a translucent child remains above its parent.
+    for (const background of backgrounds.reverse()) {
       const alpha = background[3];
       color = background.slice(0, 3).map((channel, index) => channel * alpha + color[index] * (1 - alpha));
-      if (alpha >= 1) break;
     }
 
     const linear = color.map((channel) => {
@@ -239,7 +246,7 @@
       event.preventDefault();
       event.stopPropagation();
       drag.suppressClick = true;
-      state.ball.style.right = "0px";
+      state.ball.style.right = `${BALL_DOCK_GAP_PX}px`;
       updateBallTheme();
       saveBallPosition();
     }
@@ -251,7 +258,8 @@
       return;
     }
     if (state.ballDrag.active && state.ball) {
-      state.ball.style.right = "0px";
+      state.ball.style.right = `${BALL_DOCK_GAP_PX}px`;
+      updateBallTheme();
     }
     cancelBallDrag();
   }
@@ -300,7 +308,9 @@
     state.ballTopPct = topPct;
 
     if (state.ball) {
-      state.ball.style.top = `${topPct}%`;
+      const edge = BALL_EDGE_PADDING_PX + (state.ball.offsetHeight || 44) / 2;
+      state.ball.style.top = `clamp(${edge}px, ${topPct}%, calc(100% - ${edge}px))`;
+      updateBallTheme();
     }
     if (state.panel) {
       state.panel.style.top = `min(calc(${topPct}% + 30px), calc(100vh - 64px))`;
@@ -347,7 +357,7 @@
         : state.translated ? "显示网页译文" : "翻译当前网页";
       button.setAttribute("aria-label", label);
       button.setAttribute("aria-busy", String(mode === "translating"));
-      button.title = `${label} · 拖动调整位置`;
+      state.ball.dataset.ytbtLabel = `${label}\n拖动调整位置`;
     }
   }
 
@@ -389,6 +399,7 @@
       panel.textContent = text;
     }
     panel.hidden = !text || !state.pointerOverControl;
+    if (state.ball) state.ball.dataset.ytbtHasStatus = String(Boolean(text));
   }
 
   Object.assign(App, {

@@ -44,11 +44,25 @@ async function checkFloatingControl(browser, screenshots) {
     const theme = (value) => page.waitForFunction((expected) => document.querySelector(".ytbt-immersive-tab").dataset.ytbtTheme === expected, value);
     await theme("light");
     assert.equal(await button.evaluate((el) => getComputedStyle(el).color), "rgb(255, 255, 255)");
+    assert.equal(await control.evaluate((el) => getComputedStyle(el).borderRadius), "50%");
+    assert.equal(await control.evaluate((el) => getComputedStyle(el).right), "12px");
     await page.screenshot({ path: path.join(screenshots, "floating-light.png"), animations: "disabled" });
+    await control.hover();
+    await page.waitForFunction(() => getComputedStyle(document.querySelector(".ytbt-immersive-tab"), "::after").opacity === "1");
+    await page.screenshot({ path: path.join(screenshots, "floating-hover.png"), animations: "disabled" });
+    await page.mouse.move(10, 10);
     await page.evaluate(() => document.body.classList.add("dark"));
     await theme("dark");
     assert.equal(await button.evaluate((el) => getComputedStyle(el).color), "rgb(41, 39, 53)");
     await page.screenshot({ path: path.join(screenshots, "floating-dark.png"), animations: "disabled" });
+
+    // A translucent layer is painted above the opaque body, not below it.
+    await page.evaluate(() => document.querySelector("article").style.background = "rgba(255, 255, 255, .9)");
+    await page.evaluate(() => window.dispatchEvent(new Event("resize")));
+    await theme("light");
+    await page.evaluate(() => document.querySelector("article").style.background = "transparent");
+    await page.evaluate(() => window.dispatchEvent(new Event("pageshow")));
+    await theme("dark");
 
     // The transparent article must inherit the visible body background, and
     // position-based sampling must switch when a light section scrolls under it.
@@ -62,10 +76,11 @@ async function checkFloatingControl(browser, screenshots) {
     await page.evaluate(() => window.scrollTo(0, 0));
     await theme("dark");
     await button.focus();
-    assert.equal(await control.evaluate((el) => getComputedStyle(el).outlineStyle), "solid");
+    assert.equal(await button.evaluate((el) => getComputedStyle(el).outlineStyle), "solid");
     await page.keyboard.press("Enter");
     assert.equal(await button.getAttribute("aria-busy"), "true");
     assert.equal(await panel.isVisible(), true);
+    await page.waitForFunction(() => getComputedStyle(document.querySelector(".ytbt-immersive-tab"), "::after").visibility === "hidden");
     assert.equal(await button.evaluate((el) => getComputedStyle(el, "::before").animationName), "ytbt-immersive-spin");
     await page.screenshot({ path: path.join(screenshots, "floating-translating.png"), animations: "disabled" });
     await page.evaluate(() => {
@@ -86,7 +101,7 @@ async function checkFloatingControl(browser, screenshots) {
     await page.mouse.down();
     await page.mouse.move(rect.x - 80, rect.y + 120, { steps: 8 });
     await page.mouse.up();
-    await page.waitForFunction(() => parseFloat(getComputedStyle(document.querySelector(".ytbt-immersive-tab")).right) < 1);
+    await page.waitForFunction(() => Math.abs(parseFloat(getComputedStyle(document.querySelector(".ytbt-immersive-tab")).right) - 12) < .1);
     assert.ok(await page.evaluate(() => window.previewStorage.immersiveBallTopPct > 60), "dragged position persists");
     assert.equal(await page.evaluate(() => window.previewCalls), 1, "drag does not translate");
     await page.evaluate(() => {
@@ -104,6 +119,19 @@ async function checkFloatingControl(browser, screenshots) {
     const mobileRect = await control.boundingBox();
     assert.equal(mobileRect.width, 44);
     assert.ok(mobileRect.x >= 0 && mobileRect.x + mobileRect.width <= 320);
+    // Saved near-edge positions must remain reachable on short mobile views.
+    await page.evaluate(() => {
+      window.previewStorage.immersiveBallTopPct = 96;
+      window.YTBTImmersive.state.ball.remove();
+      window.YTBTImmersive.state.panel.remove();
+      window.YTBTImmersive.state.ball = null;
+      window.YTBTImmersive.mountControls();
+    });
+    await page.setViewportSize({ width: 320, height: 240 });
+    await page.waitForFunction(() => document.querySelector(".ytbt-immersive-tab").style.top.includes("96%"));
+    const shortRect = await control.boundingBox();
+    assert.ok(shortRect.y >= 8 && shortRect.y + shortRect.height <= 232, "saved position respects viewport edges");
+    await page.screenshot({ path: path.join(screenshots, "floating-mobile.png"), animations: "disabled" });
     assert.deepEqual(errors, []);
   } finally {
     await page.close();

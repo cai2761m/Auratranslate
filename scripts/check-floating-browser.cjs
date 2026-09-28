@@ -46,8 +46,10 @@ async function checkFloatingControl(browser, screenshots) {
     assert.equal(await button.evaluate((el) => getComputedStyle(el).color), "rgb(255, 255, 255)");
     assert.equal(await control.evaluate((el) => getComputedStyle(el).borderRadius), "50%");
     assert.equal(await control.evaluate((el) => getComputedStyle(el).right), "12px");
+    assert.equal(await control.evaluate((el) => getComputedStyle(el, "::before").animationName), "none", "idle aurora stays still while reading");
     await page.screenshot({ path: path.join(screenshots, "floating-light.png"), animations: "disabled" });
     await control.hover();
+    assert.equal(await control.evaluate((el) => getComputedStyle(el, "::before").animationName), "ytbt-aurora-drift");
     await page.waitForFunction(() => getComputedStyle(document.querySelector(".ytbt-immersive-tab"), "::after").opacity === "1");
     await page.screenshot({ path: path.join(screenshots, "floating-hover.png"), animations: "disabled" });
     await page.mouse.move(10, 10);
@@ -95,6 +97,7 @@ async function checkFloatingControl(browser, screenshots) {
     await page.keyboard.press("Enter");
     assert.equal(await button.getAttribute("aria-label"), "显示网页译文");
     assert.equal(await page.evaluate(() => window.previewCalls), 1, "display changes do not restart translation");
+    assert.equal(await control.evaluate((el) => getComputedStyle(el, "::before").animationName), "none", "focus alone does not keep the aurora moving after translation");
 
     const rect = await control.boundingBox();
     await page.mouse.move(rect.x + 20, rect.y + 20);
@@ -115,6 +118,7 @@ async function checkFloatingControl(browser, screenshots) {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.evaluate(() => window.YTBTImmersive.updateBallMode("translating"));
     assert.equal(await button.evaluate((el) => getComputedStyle(el, "::before").animationName), "none");
+    assert.equal(await control.evaluate((el) => getComputedStyle(el, "::before").animationName), "none", "reduced motion also stops the aurora curtain");
     await page.setViewportSize({ width: 320, height: 640 });
     const mobileRect = await control.boundingBox();
     assert.equal(mobileRect.width, 44);

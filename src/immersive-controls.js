@@ -25,8 +25,10 @@
     ball.type = "button";
     ball.className = "ytbt-immersive-ball";
     ball.setAttribute("aria-label", "翻译当前网页");
-    ball.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M4 7h12M10 4v3M13.5 7c-.8 5-4.3 9-9.5 11M6.5 10c1.2 3.1 3.7 5.8 7 7.5M15 23l4.5-11L24 23M16.5 19h6"/>
+    ball.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M6.5 22 13 6.8a1.1 1.1 0 0 1 2 0L21.5 22"/>
+      <path class="ytbt-aurora-trail" d="M5 21c4-5.5 7-4.3 11-2.6 2.9 1.2 5.4.5 7-1.2"/>
+      <path class="ytbt-aurora-ribbon" d="M4.5 18.5c4-5.6 7.4-4.2 11.1-2.3 3.1 1.6 5.8 1.2 8-1.8"/>
     </svg>`;
 
     ballContainer.appendChild(ball);

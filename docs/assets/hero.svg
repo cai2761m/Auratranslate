@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-labelledby="title desc">
+  <title id="title">AuraTranslate — Read beyond language.</title>
+  <desc id="desc">An aurora ribbon crosses the letter A. Bilingual webpages and video subtitles, powered by your translation service.</desc>
+  <defs>
+    <linearGradient id="night" x2="1" y2="1"><stop stop-color="#111b27"/><stop offset="1" stop-color="#211b35"/></linearGradient>
+    <linearGradient id="aurora" x2="1" y2="0"><stop stop-color="#70e7c5"/><stop offset=".5" stop-color="#82cafa"/><stop offset="1" stop-color="#b19afa"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#46bfa6" stop-opacity=".24"/><stop offset="1" stop-color="#46bfa6" stop-opacity="0"/></radialGradient>
+    <radialGradient id="violet"><stop stop-color="#9369e8" stop-opacity=".28"/><stop offset="1" stop-color="#9369e8" stop-opacity="0"/></radialGradient>
+    <linearGradient id="glass" x2="1" y2="1"><stop stop-color="#294c50"/><stop offset=".55" stop-color="#34394c"/><stop offset="1" stop-color="#2e2446"/></linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="12"/></filter>
+    <clipPath id="clip"><rect width="1280" height="420" rx="24"/></clipPath>
+  </defs>
+  <g clip-path="url(#clip)">
+    <rect width="1280" height="420" fill="url(#night)"/>
+    <ellipse cx="940" cy="320" rx="520" ry="360" fill="url(#glow)"/>
+    <ellipse cx="1170" cy="40" rx="470" ry="370" fill="url(#violet)"/>
+    <path d="M670 360C880 55 950 470 1350 55" fill="none" stroke="url(#aurora)" stroke-width="28" opacity=".22" filter="url(#blur)"/>
+    <path d="M700 360C900 80 980 430 1340 90M690 388C905 112 1020 440 1370 128" fill="none" stroke="url(#aurora)" stroke-width="1.5" opacity=".3"/>
+    <g transform="translate(72 62)">
+      <text fill="#b5c2d2" font-family="Segoe UI,Arial,sans-serif" font-size="15" letter-spacing="4">AURORAS FOR YOUR EVERYDAY READING</text>
+      <text y="87" fill="#f6f7fc" font-family="Segoe UI,Arial,sans-serif" font-size="66" font-weight="650" letter-spacing="-2">AuraTranslate</text>
+      <text y="143" fill="#d5dfeb" font-family="Segoe UI,Arial,sans-serif" font-size="30" font-weight="400">Read beyond language.</text>
+      <text y="187" fill="#98aabb" font-family="Segoe UI,Arial,sans-serif" font-size="17">Webpages. Bilingual subtitles. Your translation service.</text>
+      <g transform="translate(0 239)" font-family="Segoe UI,Arial,sans-serif" font-size="13" fill="#c6d8dd">
+        <rect width="151" height="34" rx="17" fill="#ffffff" fill-opacity=".045" stroke="#ffffff" stroke-opacity=".12"/>
+        <text x="18" y="22">Read in context</text>
+        <rect x="163" width="161" height="34" rx="17" fill="#ffffff" fill-opacity=".045" stroke="#ffffff" stroke-opacity=".12"/>
+        <text x="181" y="22">Bring your own API</text>
+        <rect x="336" width="125" height="34" rx="17" fill="#ffffff" fill-opacity=".045" stroke="#ffffff" stroke-opacity=".12"/>
+        <text x="354" y="22">Open source</text>
+      </g>
+    </g>
+    <g transform="translate(1040 207)">
+      <circle r="120" fill="none" stroke="#a1b9cb" stroke-opacity=".12"/>
+      <circle r="94" fill="url(#glass)" stroke="#c7d5e8" stroke-opacity=".24"/>
+      <g transform="translate(-66 -64) scale(4.7)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M6.5 22 13 6.8a1.1 1.1 0 0 1 2 0L21.5 22" stroke="#f6f8ff" stroke-width="1.4"/>
+        <path d="M5 21c4-5.5 7-4.3 11-2.6 2.9 1.2 5.4.5 7-1.2" stroke="#b2b9ff" stroke-width=".8" opacity=".7"/>
+        <path d="M4.5 18.5c4-5.6 7.4-4.2 11.1-2.3 3.1 1.6 5.8 1.2 8-1.8" stroke="url(#aurora)" stroke-width="1.6"/>
+      </g>
+      <circle cx="83" cy="-85" r="3" fill="#b19afa"/><circle cx="-111" cy="47" r="2.5" fill="#70e7c5"/>
+    </g>
+  </g>
+</svg>

@@ -43,7 +43,8 @@ async function checkFloatingControl(browser, screenshots) {
     const panel = page.locator(".ytbt-immersive-panel");
     const theme = (value) => page.waitForFunction((expected) => document.querySelector(".ytbt-immersive-tab").dataset.ytbtTheme === expected, value);
     await theme("light");
-    assert.equal(await button.evaluate((el) => getComputedStyle(el).color), "rgb(255, 255, 255)");
+    assert.equal(await button.evaluate((el) => getComputedStyle(el).color), "rgb(41, 39, 53)");
+    assert.equal(await control.evaluate((el) => getComputedStyle(el).backgroundColor), "rgb(255, 255, 255)");
     assert.equal(await control.evaluate((el) => getComputedStyle(el).borderRadius), "50%");
     assert.equal(await control.evaluate((el) => getComputedStyle(el).right), "12px");
     assert.equal(await control.evaluate((el) => getComputedStyle(el, "::before").animationName), "none", "idle aurora stays still while reading");
@@ -55,7 +56,8 @@ async function checkFloatingControl(browser, screenshots) {
     await page.mouse.move(10, 10);
     await page.evaluate(() => document.body.classList.add("dark"));
     await theme("dark");
-    assert.equal(await button.evaluate((el) => getComputedStyle(el).color), "rgb(41, 39, 53)");
+    assert.equal(await button.evaluate((el) => getComputedStyle(el).color), "rgb(255, 255, 255)");
+    assert.equal(await control.evaluate((el) => getComputedStyle(el).backgroundColor), "rgb(41, 39, 53)");
     await page.screenshot({ path: path.join(screenshots, "floating-dark.png"), animations: "disabled" });
 
     // A translucent layer is painted above the opaque body, not below it.

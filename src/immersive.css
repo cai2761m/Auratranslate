@@ -3,7 +3,7 @@
   --ytbt-ball-foreground: #ffffff;
   --ytbt-ball-border: rgba(255, 255, 255, 0.16);
   --ytbt-ball-sheen: rgba(255, 255, 255, 0.1);
-  --ytbt-ball-shadow: rgba(24, 22, 34, 0.18);
+  --ytbt-ball-shadow: rgba(0, 0, 0, 0.28);
   --ytbt-ball-ring: #a898e7;
   --ytbt-aurora-green: #70e7c5;
   --ytbt-aurora-blue: #82cafa;
@@ -192,12 +192,12 @@
   background: #c64c65;
 }
 
-.ytbt-immersive-tab[data-ytbt-theme="dark"] {
+.ytbt-immersive-tab[data-ytbt-theme="light"] {
   --ytbt-ball-background: #ffffff;
   --ytbt-ball-foreground: #292735;
-  --ytbt-ball-border: rgba(255, 255, 255, 0.6);
+  --ytbt-ball-border: rgba(84, 74, 113, 0.12);
   --ytbt-ball-sheen: rgba(209, 201, 231, 0.3);
-  --ytbt-ball-shadow: rgba(0, 0, 0, 0.28);
+  --ytbt-ball-shadow: rgba(37, 33, 51, 0.14);
   --ytbt-ball-ring: #baa4ee;
   --ytbt-aurora-wash-green: rgba(71, 211, 174, 0.25);
   --ytbt-aurora-wash-violet: rgba(161, 125, 243, 0.27);

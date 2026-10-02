@@ -1,266 +1,272 @@
 .ytbt-immersive-tab {
-  --ytbt-ball-background: #292735;
-  --ytbt-ball-foreground: #ffffff;
-  --ytbt-ball-border: rgba(255, 255, 255, 0.16);
-  --ytbt-ball-sheen: rgba(255, 255, 255, 0.1);
-  --ytbt-ball-shadow: rgba(0, 0, 0, 0.28);
-  --ytbt-ball-ring: #a898e7;
-  --ytbt-aurora-green: #70e7c5;
-  --ytbt-aurora-blue: #82cafa;
-  --ytbt-aurora-violet: #b19afa;
-  --ytbt-aurora-wash-green: rgba(44, 214, 174, 0.32);
-  --ytbt-aurora-wash-violet: rgba(141, 109, 235, 0.4);
-  --ytbt-aurora-ribbon: #90efd8;
-  --ytbt-aurora-trail: #b2b9ff;
-  --ytbt-aurora-curtain: rgba(119, 231, 217, 0.18);
-  all: initial;
-  position: fixed;
-  top: 50%;
-  right: 12px;
-  z-index: 2147483645;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  margin: 0;
-  background:
-    radial-gradient(ellipse at 0% 100%, var(--ytbt-aurora-wash-green), transparent 68%),
+    --ytbt-ball-background: #292735;
+    --ytbt-ball-foreground: #ffffff;
+    --ytbt-ball-border: rgba(255, 255, 255, 0.16);
+    --ytbt-ball-sheen: rgba(255, 255, 255, 0.1);
+    --ytbt-ball-shadow: rgba(0, 0, 0, 0.28);
+    --ytbt-ball-ring: #a898e7;
+    --ytbt-aurora-green: #70e7c5;
+    --ytbt-aurora-blue: #82cafa;
+    --ytbt-aurora-violet: #b19afa;
+    --ytbt-aurora-wash-green: rgba(44, 214, 174, 0.32);
+    --ytbt-aurora-wash-violet: rgba(141, 109, 235, 0.4);
+    --ytbt-aurora-ribbon: #90efd8;
+    --ytbt-aurora-trail: #b2b9ff;
+    --ytbt-aurora-curtain: rgba(119, 231, 217, 0.18);
+    all: initial;
+    position: fixed;
+    top: 50%;
+    right: 12px;
+    z-index: 2147483645;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    margin: 0;
+    background: radial-gradient(ellipse at 0% 100%, var(--ytbt-aurora-wash-green), transparent 68%),
     radial-gradient(ellipse at 100% 0%, var(--ytbt-aurora-wash-violet), transparent 65%),
     linear-gradient(145deg, var(--ytbt-ball-sheen), transparent 65%),
     var(--ytbt-ball-background);
-  color: var(--ytbt-ball-foreground);
-  border: 1px solid var(--ytbt-ball-border);
-  border-radius: 50%;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08), 0 6px 18px var(--ytbt-ball-shadow), inset 0 1px 0 var(--ytbt-ball-sheen);
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  direction: ltr;
-  isolation: isolate;
-  transform: translateY(-50%);
-  transition:
-    right 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    color: var(--ytbt-ball-foreground);
+    border: 1px solid var(--ytbt-ball-border);
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08), 0 6px 18px var(--ytbt-ball-shadow), inset 0 1px 0 var(--ytbt-ball-sheen);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    direction: ltr;
+    isolation: isolate;
+    transform: translateY(-50%);
+    transition: right 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
     transform 180ms ease,
     box-shadow 180ms ease;
 }
 
 .ytbt-immersive-tab:hover {
-  transform: translate(-2px, -50%);
-  box-shadow: -4px 3px 16px rgba(58, 196, 173, 0.16), 4px -2px 16px rgba(146, 110, 225, 0.16), 0 9px 24px var(--ytbt-ball-shadow), inset 0 1px 0 var(--ytbt-ball-sheen);
+    transform: translate(-2px, -50%);
+    box-shadow: -4px 3px 16px rgba(58, 196, 173, 0.16), 4px -2px 16px rgba(146, 110, 225, 0.16), 0 9px 24px var(--ytbt-ball-shadow), inset 0 1px 0 var(--ytbt-ball-sheen);
 }
 
 /* A quiet aurora curtain drifts only while the control is in use. */
 .ytbt-immersive-tab::before {
-  content: "";
-  position: absolute;
-  inset: 1px;
-  border-radius: inherit;
-  background: linear-gradient(125deg, transparent 20%, var(--ytbt-aurora-curtain) 37%, transparent 47%, var(--ytbt-aurora-curtain) 56%, transparent 72%);
-  background-size: 220% 100%;
-  background-position: 55% 50%;
-  pointer-events: none;
+    content: "";
+    position: absolute;
+    inset: 1px;
+    border-radius: inherit;
+    background: linear-gradient(125deg, transparent 20%, var(--ytbt-aurora-curtain) 37%, transparent 47%, var(--ytbt-aurora-curtain) 56%, transparent 72%);
+    background-size: 220% 100%;
+    background-position: 55% 50%;
+    pointer-events: none;
 }
 
 .ytbt-immersive-tab:is(:hover, [data-ytbt-state="translating"])::before {
-  animation: ytbt-aurora-drift 4s ease-in-out infinite alternate;
+    animation: ytbt-aurora-drift 4s ease-in-out infinite alternate;
 }
 
 @keyframes ytbt-aurora-drift {
-  from { background-position: 15% 50%; }
-  to { background-position: 85% 50%; }
+    from {
+        background-position: 15% 50%;
+    }
+    to {
+        background-position: 85% 50%;
+    }
 }
 
 .ytbt-immersive-tab:active {
-  transform: translate(-2px, -50%) scale(0.95);
+    transform: translate(-2px, -50%) scale(0.95);
 }
 
 .ytbt-immersive-tab.ytbt-immersive-dragging {
-  cursor: grabbing;
-  transform: translateY(-50%);
-  transition: box-shadow 120ms ease;
+    cursor: grabbing;
+    transform: translateY(-50%);
+    transition: box-shadow 120ms ease;
 }
 
 /* The action hint is separate from live progress; neither opens by itself. */
 .ytbt-immersive-tab::after {
-  content: attr(data-ytbt-label);
-  position: absolute;
-  top: 50%;
-  right: calc(100% + 12px);
-  padding: 9px 13px;
-  border: 1px solid var(--ytbt-ball-border);
-  border-radius: 12px;
-  background: var(--ytbt-ball-background);
-  color: var(--ytbt-ball-foreground);
-  box-shadow: 0 4px 18px var(--ytbt-ball-shadow);
-  font: 400 12px/1.7 "Segoe UI", "Microsoft YaHei UI", sans-serif;
-  white-space: pre;
-  text-align: left;
-  pointer-events: none;
-  opacity: 0;
-  visibility: hidden;
-  transform: translate(4px, -50%);
-  transition: opacity 160ms ease, transform 160ms ease, visibility 160ms;
+    content: attr(data-ytbt-label);
+    position: absolute;
+    top: 50%;
+    right: calc(100% + 12px);
+    padding: 9px 13px;
+    border: 1px solid var(--ytbt-ball-border);
+    border-radius: 12px;
+    background: var(--ytbt-ball-background);
+    color: var(--ytbt-ball-foreground);
+    box-shadow: 0 4px 18px var(--ytbt-ball-shadow);
+    font: 400 12px/1.7 "Segoe UI", "Microsoft YaHei UI", sans-serif;
+    white-space: pre;
+    text-align: left;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(4px, -50%);
+    transition: opacity 160ms ease, transform 160ms ease, visibility 160ms;
 }
 
 .ytbt-immersive-tab:not([data-ytbt-has-status="true"]):not(.ytbt-immersive-dragging):is(:hover, :focus-within)::after {
-  opacity: 1;
-  visibility: visible;
-  transform: translate(0, -50%);
+    opacity: 1;
+    visibility: visible;
+    transform: translate(0, -50%);
 }
 
 .ytbt-immersive-ball {
-  all: initial;
-  position: relative;
-  overflow: visible;
-  box-sizing: border-box;
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  margin: 0;
-  border: none;
-  border-radius: inherit;
-  background: transparent;
-  color: var(--ytbt-ball-foreground);
-  box-shadow: none;
-  cursor: inherit;
-  touch-action: none;
-  -webkit-tap-highlight-color: transparent;
+    all: initial;
+    position: relative;
+    overflow: visible;
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: inherit;
+    background: transparent;
+    color: var(--ytbt-ball-foreground);
+    box-shadow: none;
+    cursor: inherit;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .ytbt-immersive-ball svg {
-  width: 28px;
-  height: 28px;
-  display: block;
-  fill: none;
-  stroke: currentColor;
-  pointer-events: none;
+    width: 28px;
+    height: 28px;
+    display: block;
+    fill: none;
+    stroke: currentColor;
+    pointer-events: none;
 }
 
 .ytbt-immersive-ball .ytbt-aurora-ribbon {
-  stroke: var(--ytbt-aurora-ribbon);
-  stroke-width: 2;
+    stroke: var(--ytbt-aurora-ribbon);
+    stroke-width: 2;
 }
 
 .ytbt-immersive-ball .ytbt-aurora-trail {
-  stroke: var(--ytbt-aurora-trail);
-  stroke-width: 1;
-  opacity: 0.75;
+    stroke: var(--ytbt-aurora-trail);
+    stroke-width: 1;
+    opacity: 0.75;
 }
 
 .ytbt-immersive-ball:focus-visible {
-  outline: 2px solid var(--ytbt-ball-ring);
-  outline-offset: 3px;
+    outline: 2px solid var(--ytbt-ball-ring);
+    outline-offset: 3px;
 }
+
 .ytbt-immersive-tab[data-ytbt-state="translating"] .ytbt-immersive-ball::before {
-  content: "";
-  position: absolute;
-  inset: -5px;
-  background: conic-gradient(from 20deg, transparent 10%, var(--ytbt-aurora-green) 38%, var(--ytbt-aurora-blue) 62%, var(--ytbt-aurora-violet) 85%, transparent);
-  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 0);
-  border-radius: 50%;
-  animation: ytbt-immersive-spin 1.4s linear infinite;
-  pointer-events: none;
+    content: "";
+    position: absolute;
+    inset: -5px;
+    background: conic-gradient(from 20deg, transparent 10%, var(--ytbt-aurora-green) 38%, var(--ytbt-aurora-blue) 62%, var(--ytbt-aurora-violet) 85%, transparent);
+    mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 0);
+    border-radius: 50%;
+    animation: ytbt-immersive-spin 1.4s linear infinite;
+    pointer-events: none;
 }
 
 .ytbt-immersive-tab:is([data-ytbt-state="done"], [data-ytbt-state="error"]) .ytbt-immersive-ball::after {
-  position: absolute;
-  right: -2px;
-  bottom: -2px;
-  box-sizing: border-box;
-  width: 15px;
-  height: 15px;
-  border: 2px solid var(--ytbt-ball-background);
-  border-radius: 50%;
-  color: #fff;
-  font: 700 10px/11px Arial, sans-serif;
-  text-align: center;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
-  pointer-events: none;
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    box-sizing: border-box;
+    width: 15px;
+    height: 15px;
+    border: 2px solid var(--ytbt-ball-background);
+    border-radius: 50%;
+    color: #fff;
+    font: 700 10px/11px Arial, sans-serif;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.14);
+    pointer-events: none;
 }
+
 .ytbt-immersive-tab[data-ytbt-state="done"] .ytbt-immersive-ball::after {
-  content: "\2713";
-  background: #32866b;
+    content: "\2713";
+    background: #32866b;
 }
+
 .ytbt-immersive-tab[data-ytbt-state="error"] .ytbt-immersive-ball::after {
-  content: "!";
-  background: #c64c65;
+    content: "!";
+    background: #c64c65;
 }
 
 .ytbt-immersive-tab[data-ytbt-theme="light"] {
-  --ytbt-ball-background: #ffffff;
-  --ytbt-ball-foreground: #292735;
-  --ytbt-ball-border: rgba(84, 74, 113, 0.12);
-  --ytbt-ball-sheen: rgba(209, 201, 231, 0.3);
-  --ytbt-ball-shadow: rgba(37, 33, 51, 0.14);
-  --ytbt-ball-ring: #baa4ee;
-  --ytbt-aurora-wash-green: rgba(71, 211, 174, 0.25);
-  --ytbt-aurora-wash-violet: rgba(161, 125, 243, 0.27);
-  --ytbt-aurora-ribbon: #207d77;
-  --ytbt-aurora-trail: #7366b1;
-  --ytbt-aurora-curtain: rgba(95, 203, 189, 0.16);
+    --ytbt-ball-background: #ffffff;
+    --ytbt-ball-foreground: #292735;
+    --ytbt-ball-border: rgba(84, 74, 113, 0.12);
+    --ytbt-ball-sheen: rgba(209, 201, 231, 0.3);
+    --ytbt-ball-shadow: rgba(37, 33, 51, 0.14);
+    --ytbt-ball-ring: #baa4ee;
+    --ytbt-aurora-wash-green: rgba(71, 211, 174, 0.25);
+    --ytbt-aurora-wash-violet: rgba(161, 125, 243, 0.27);
+    --ytbt-aurora-ribbon: #207d77;
+    --ytbt-aurora-trail: #7366b1;
+    --ytbt-aurora-curtain: rgba(95, 203, 189, 0.16);
 }
 
 .ytbt-immersive-panel {
-  position: fixed;
-  top: calc(50% + 34px);
-  right: 12px;
-  z-index: 2147483645;
-  box-sizing: border-box;
-  max-width: min(320px, calc(100vw - 36px));
-  padding: 10px 14px;
-  border: 1px solid #e8e7ee;
-  border-radius: 14px;
-  background: #ffffff;
-  color: #292735;
-  box-shadow: 0 4px 8px rgba(24, 22, 34, 0.04), 0 12px 32px rgba(24, 22, 34, 0.1);
-  font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 1.65;
-  overflow-wrap: anywhere;
+    position: fixed;
+    top: calc(50% + 34px);
+    right: 12px;
+    z-index: 2147483645;
+    box-sizing: border-box;
+    max-width: min(320px, calc(100vw - 36px));
+    padding: 10px 14px;
+    border: 1px solid #e8e7ee;
+    border-radius: 14px;
+    background: #ffffff;
+    color: #292735;
+    box-shadow: 0 4px 8px rgba(24, 22, 34, 0.04), 0 12px 32px rgba(24, 22, 34, 0.1);
+    font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
 }
+
 .ytbt-immersive-panel[data-ytbt-theme="dark"] {
-  background: #292735;
-  border-color: #45414f;
-  color: #eeedf4;
+    background: #292735;
+    border-color: #45414f;
+    color: #eeedf4;
 }
 
 .ytbt-immersive-panel[hidden] {
-  display: none !important;
+    display: none !important;
 }
 
 .ytbt-immersive-source {
-  outline-offset: 2px;
+    outline-offset: 2px;
 }
 
 html.ytbt-translation-only:not(.ytbt-immersive-hidden) [data-ytbt-original] {
-  display: none !important;
+    display: none !important;
 }
 
 html.ytbt-translation-only:not(.ytbt-immersive-hidden) .ytbt-immersive-translation[data-ytbt-state="done"] {
-  margin-top: 0;
+    margin-top: 0;
 }
 
 .ytbt-immersive-translation {
-  box-sizing: border-box;
-  display: block;
-  width: 100%;
-  margin: 0.35em 0 0.15em;
-  color: inherit;
-  font-family: inherit;
-  font-size: 1em;
-  line-height: inherit;
-  text-align: inherit;
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    margin: 0.35em 0 0.15em;
+    color: inherit;
+    font-family: inherit;
+    font-size: 1em;
+    line-height: inherit;
+    text-align: inherit;
 }
 
 li > .ytbt-immersive-translation {
-  margin-top: 0.3em;
+    margin-top: 0.3em;
 }
 
 a > .ytbt-immersive-translation,
@@ -269,9 +275,9 @@ em > .ytbt-immersive-translation,
 b > .ytbt-immersive-translation,
 i > .ytbt-immersive-translation,
 span > .ytbt-immersive-translation {
-  display: inline;
-  margin: 0;
-  width: auto;
+    display: inline;
+    margin: 0;
+    width: auto;
 }
 
 a > .ytbt-immersive-translation::before,
@@ -280,80 +286,81 @@ em > .ytbt-immersive-translation::before,
 b > .ytbt-immersive-translation::before,
 i > .ytbt-immersive-translation::before,
 span > .ytbt-immersive-translation::before {
-  content: " ";
+    content: " ";
 }
 
 .ytbt-immersive-text {
-  font-weight: inherit;
+    font-weight: inherit;
 }
 
 [data-ytbt-outline-label] {
-  min-width: 0;
-  flex: 1;
+    min-width: 0;
+    flex: 1;
 }
 
 .ytbt-immersive-translation.ytbt-immersive-stacked {
-  display: block;
-  width: 100%;
-  margin: 0.3em 0 0.15em;
+    display: block;
+    width: 100%;
+    margin: 0.3em 0 0.15em;
 }
 
 .ytbt-immersive-translation.ytbt-immersive-stacked::before {
-  content: none;
+    content: none;
 }
 
 .ytbt-immersive-translation[data-ytbt-state="loading"] {
-  display: inline;
-  width: auto;
-  margin: 0 0 0 8px;
-  font-size: 14px;
-  line-height: 1;
-  vertical-align: middle;
+    display: inline;
+    width: auto;
+    margin: 0 0 0 8px;
+    font-size: 14px;
+    line-height: 1;
+    vertical-align: middle;
 }
 
 .ytbt-immersive-translation[data-ytbt-state="loading"]::before {
-  content: none;
+    content: none;
 }
 
 .ytbt-immersive-spinner {
-  display: inline-block;
-  box-sizing: border-box;
-  width: 12px;
-  height: 12px;
-  border: 2px solid rgba(107, 114, 128, 0.22);
-  border-top-color: #6b7280;
-  border-radius: 50%;
-  animation: ytbt-immersive-spin 0.7s linear infinite;
+    display: inline-block;
+    box-sizing: border-box;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(107, 114, 128, 0.22);
+    border-top-color: #6b7280;
+    border-radius: 50%;
+    animation: ytbt-immersive-spin 0.7s linear infinite;
 }
 
 .ytbt-immersive-translation[data-ytbt-state="waiting"] {
-  color: #6b7280;
+    color: #6b7280;
 }
 
 @keyframes ytbt-immersive-spin {
-  to {
-    transform: rotate(360deg);
-  }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .ytbt-immersive-translation[data-ytbt-state="error"] {
-  color: #b91c1c;
+    color: #b91c1c;
 }
 
 .ytbt-immersive-translation[hidden],
 html.ytbt-immersive-hidden .ytbt-immersive-translation {
-  display: none !important;
+    display: none !important;
 }
 
 @media (max-width: 640px) {
-  .ytbt-immersive-panel {
-    right: 12px;
-    max-width: min(280px, calc(100vw - 24px));
-  }
+    .ytbt-immersive-panel {
+        right: 12px;
+        max-width: min(280px, calc(100vw - 24px));
+    }
 }
+
 @media (prefers-reduced-motion: reduce) {
-  .ytbt-immersive-tab, .ytbt-immersive-tab::before, .ytbt-immersive-tab::after, .ytbt-immersive-ball, .ytbt-immersive-ball::before, .ytbt-immersive-spinner {
-    animation: none !important;
-    transition: none !important;
-  }
+    .ytbt-immersive-tab, .ytbt-immersive-tab::before, .ytbt-immersive-tab::after, .ytbt-immersive-ball, .ytbt-immersive-ball::before, .ytbt-immersive-spinner {
+        animation: none !important;
+        transition: none !important;
+    }
 }

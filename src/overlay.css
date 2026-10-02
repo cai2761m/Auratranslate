@@ -9,171 +9,176 @@ html.ytbt-hide-native-captions .html5-video-player .ytp-caption-segment,
 html.ytbt-hide-native-captions .ytp-caption-window-container,
 html.ytbt-hide-native-captions .caption-window,
 [data-ytbt-native-caption-hidden="true"] {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
 }
 
 .ytbt-overlay {
-  --ytbt-font-scale: 1;
-  position: absolute;
-  left: 50%;
-  bottom: calc(8% + 44px);
-  z-index: 2147483646;
-  width: min(92%, 1100px);
-  transform: translateX(-50%);
-  pointer-events: none;
-  text-align: center;
-  color: #fff;
-  font-family: Arial, "Microsoft YaHei", sans-serif;
-  line-height: 1.28;
-  text-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.9),
+    --ytbt-font-scale: 1;
+    position: absolute;
+    left: 50%;
+    bottom: calc(8% + 44px);
+    z-index: 2147483646;
+    width: min(92%, 1100px);
+    transform: translateX(-50%);
+    pointer-events: none;
+    text-align: center;
+    color: #fff;
+    font-family: Arial, "Microsoft YaHei", sans-serif;
+    line-height: 1.28;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9),
     0 0 3px rgba(0, 0, 0, 0.95);
 }
 
 .ytbt-overlay.ytbt-dragging {
-  user-select: none;
+    user-select: none;
 }
 
 .ytbt-overlay[hidden] {
-  display: none !important;
+    display: none !important;
 }
 
 .ytbt-lines {
-  display: inline-block;
-  max-width: 100%;
-  padding: 10px 16px;
-  border-radius: 8px;
-  background: rgba(10, 22, 40, 0.88);
-  backdrop-filter: blur(16px);
-  cursor: grab;
-  pointer-events: auto;
-  touch-action: none;
-  user-select: none;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4), 0 4px 24px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(8, 145, 178, 0.2);
-  border-left: 3px solid rgba(8, 145, 178, 0.6);
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+    max-width: 100%;
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: rgba(10, 22, 40, 0.88);
+    backdrop-filter: blur(16px);
+    cursor: grab;
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4), 0 4px 24px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(8, 145, 178, 0.2);
+    border-left: 3px solid rgba(8, 145, 178, 0.6);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ytbt-overlay.ytbt-dragging .ytbt-lines,
 .ytbt-overlay.ytbt-dragging .ytbt-status {
-  cursor: grabbing;
+    cursor: grabbing;
 }
 
 .ytbt-cn {
-  font-size: calc(28px * var(--ytbt-font-scale));
-  font-weight: 700;
-  word-break: break-word;
-  letter-spacing: -0.3px;
-  line-height: 1.3;
+    font-size: calc(28px * var(--ytbt-font-scale));
+    font-weight: 700;
+    word-break: break-word;
+    letter-spacing: -0.3px;
+    line-height: 1.3;
 }
 
 .ytbt-en {
-  margin-top: 3px;
-  font-size: calc(18px * var(--ytbt-font-scale));
-  font-weight: 600;
-  opacity: 0.92;
-  word-break: break-word;
+    margin-top: 3px;
+    font-size: calc(18px * var(--ytbt-font-scale));
+    font-weight: 600;
+    opacity: 0.92;
+    word-break: break-word;
 }
 
 .ytbt-status {
-  display: inline-block;
-  max-width: min(88vw, 760px);
-  padding: 8px 14px;
-  border-radius: 8px;
-  background: rgba(10, 22, 40, 0.88);
-  backdrop-filter: blur(16px);
-  font-size: calc(16px * var(--ytbt-font-scale));
-  font-weight: 600;
-  cursor: grab;
-  pointer-events: auto;
-  touch-action: none;
-  user-select: none;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4), 0 4px 24px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(8, 145, 178, 0.2);
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-block;
+    max-width: min(88vw, 760px);
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: rgba(10, 22, 40, 0.88);
+    backdrop-filter: blur(16px);
+    font-size: calc(16px * var(--ytbt-font-scale));
+    font-weight: 600;
+    cursor: grab;
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4), 0 4px 24px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(8, 145, 178, 0.2);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .ytbt-overlay.ytbt-no-status .ytbt-status,
 .ytbt-overlay.ytbt-no-cue .ytbt-lines {
-  display: none;
+    display: none;
 }
 
 .ytbt-overlay.ytbt-loading .ytbt-cn {
-  opacity: 0.7;
-  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    opacity: 0.7;
+    animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 0.7; }
-  50% { opacity: 0.9; }
+    0%, 100% {
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 0.9;
+    }
 }
 
 body.ytbt-fullscreen .ytbt-overlay,
 .html5-video-player.ytp-fullscreen .ytbt-overlay {
-  bottom: calc(9% + 42px);
+    bottom: calc(9% + 42px);
 }
 
 /* YouTube's mobile player is much smaller than the desktop player. Keep the
    overlay inside the video surface and above the touch controls. */
 @media (max-width: 600px) {
-  .ytbt-overlay {
-    width: 96%;
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
-    line-height: 1.2;
-  }
+    .ytbt-overlay {
+        width: 96%;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 48px);
+        line-height: 1.2;
+    }
 
-  .ytbt-lines,
-  .ytbt-status {
-    padding: 4px 7px;
-    border-radius: 4px;
-  }
+    .ytbt-lines,
+    .ytbt-status {
+        padding: 4px 7px;
+        border-radius: 4px;
+    }
 
-  .ytbt-cn {
-    font-size: calc(21px * var(--ytbt-font-scale));
-  }
+    .ytbt-cn {
+        font-size: calc(21px * var(--ytbt-font-scale));
+    }
 
-  .ytbt-en {
-    margin-top: 2px;
-    font-size: calc(14px * var(--ytbt-font-scale));
-  }
+    .ytbt-en {
+        margin-top: 2px;
+        font-size: calc(14px * var(--ytbt-font-scale));
+    }
 
-  .ytbt-status {
-    max-width: 92vw;
-    font-size: calc(13px * var(--ytbt-font-scale));
-  }
+    .ytbt-status {
+        max-width: 92vw;
+        font-size: calc(13px * var(--ytbt-font-scale));
+    }
 
-  body.ytbt-fullscreen .ytbt-overlay,
-  .html5-video-player.ytp-fullscreen .ytbt-overlay {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 52px);
-  }
+    body.ytbt-fullscreen .ytbt-overlay,
+    .html5-video-player.ytp-fullscreen .ytbt-overlay {
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 52px);
+    }
 }
 
 /* Hover effects for desktop */
 @media (hover: hover) and (min-width: 601px) {
-  .ytbt-lines:hover,
-  .ytbt-status:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 1px rgba(8, 145, 178, 0.5);
-    border-color: rgba(8, 145, 178, 0.4);
-  }
+    .ytbt-lines:hover,
+    .ytbt-status:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 1px rgba(8, 145, 178, 0.5);
+        border-color: rgba(8, 145, 178, 0.4);
+    }
 
-  .ytbt-lines:hover {
-    border-left-color: rgba(8, 145, 178, 0.8);
-  }
+    .ytbt-lines:hover {
+        border-left-color: rgba(8, 145, 178, 0.8);
+    }
 }
 
 /* Accessibility */
 @media (prefers-reduced-motion: reduce) {
-  .ytbt-lines,
-  .ytbt-status {
-    transition: none !important;
-  }
+    .ytbt-lines,
+    .ytbt-status {
+        transition: none !important;
+    }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 0.7; }
-  }
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 0.7;
+        }
+    }
 }

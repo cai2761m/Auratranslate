@@ -1,4 +1,4 @@
-import { createRoot } from "react-dom/client";
-import { PopupApp } from "./App";
+import {createRoot} from "react-dom/client";
+import {PopupApp} from "./App";
 
-createRoot(document.getElementById("root")).render(<PopupApp />);
+createRoot(document.getElementById("root")).render(<PopupApp/>);

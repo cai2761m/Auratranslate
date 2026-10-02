@@ -1291,12 +1291,6 @@ button.service-entry[aria-current="true"]::before {
     .brand-mark {
         width: 34px;
         height: 34px;
-        border-radius: 10px;
-    }
-
-    .brand-mark .ui-icon {
-        width: 20px;
-        height: 20px;
     }
 
     /* The autosave line at the foot of the panel already reports saving. */

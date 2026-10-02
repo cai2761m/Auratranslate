@@ -8,9 +8,6 @@ const paths = {
     arrow: "M5 12h14m-5-5 5 5-5 5",
     chevron: "m8 10 4 4 4-4",
     plus: "M12 5v14M5 12h14",
-    // The mark on the floating control: a two-peak ribbon. Used as the brand
-    // mark so it stops competing with the translate glyph on the action button.
-    aurora: "M3 17 8.5 7 13 14.5 17 9.5 21 17",
     // Appearance: follow the system, pinned light, pinned dark.
     "theme-system": "M3 5h18v11H3zM8 20h8M12 16v4",
     "theme-light": "M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4",

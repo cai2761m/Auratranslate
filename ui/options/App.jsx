@@ -112,9 +112,7 @@ export function OptionsApp() {
         <main className="page">
             <header className="page-header">
                 <div className="brand">
-          <span className="brand-mark">
-            <Icon name="aurora"/>
-          </span>
+                    <img className="brand-mark" src="../icons/icon.svg" alt=""/>
                     <span className="brand-name">AuraTranslate</span>
                     <span className="header-divider"/>
                     <h1>设置</h1>

@@ -221,6 +221,10 @@ export function PopupApp() {
         <span className="page-kind">网页翻译</span>
       </div>
       <section className="translation-controls" aria-label="网页翻译">
+        {/* One card for every input the translation needs. The language pair
+            and the provider used to be two nested cards with two shadows,
+            which boxed four fields into three layers. */}
+        <div className="control-card">
         <div className="language-pair">
           <label className="select-field">
             <span>原文语言</span>
@@ -320,6 +324,7 @@ export function PopupApp() {
             {hint}
           </small>
         </label>
+        </div>
         </div>
         <div className="translate-actions">
           <button
@@ -455,6 +460,9 @@ export function PopupApp() {
             ))}
           </div>
         </fieldset>
+        {/* Same card as the translation screen, so switching screens does not
+            switch visual language. */}
+        <div className="control-card toggle-card">
         <label className="popup-toggle">
           <span>全局自动翻译</span>
           <input
@@ -481,6 +489,7 @@ export function PopupApp() {
             }
           />
         </label>
+        </div>
       </section>
     </main>
   );

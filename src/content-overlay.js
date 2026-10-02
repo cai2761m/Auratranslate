@@ -97,6 +97,7 @@ function stopOverlayTouchEvent(event) {
 }
 
 function handleOverlayTouchStart(event) {
+    if (event.target && event.target.closest && event.target.closest(".ytbt-player-ui, .ytbt-player-button")) return;
     if (state.overlayDrag.touchId != null || event.touches.length !== 1) {
         return;
     }

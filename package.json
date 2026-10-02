@@ -11,7 +11,7 @@
     "icons": "node scripts/build-icons.cjs",
     "pretest": "npm run build:check",
     "preview": "node scripts/preview-ui.cjs",
-    "test:ui:browser": "npm run build:check && node scripts/check-ui-browser.cjs"
+    "test:ui:browser": "npm run build:check && node scripts/check-ui-browser.cjs && node scripts/check-player-browser.cjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",

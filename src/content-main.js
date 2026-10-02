@@ -29,6 +29,7 @@ async function init() {
         requestPlayerResponse();
     }
     bindStorageChanges();
+    if (typeof startPlayerControls === "function") startPlayerControls();
     startNativeCaptionBlocker();
     setInterval(watchVideoElement, 1000);
     setInterval(() => updateNativeCaptionBlocking(true), 500);
@@ -50,6 +51,11 @@ async function loadSettings() {
 function normalizeSettings(settings) {
     const merged = Object.assign({}, Core.DEFAULT_SETTINGS, settings || {});
     merged.fontScale = Core.normalizeFontScale(merged.fontScale);
+    merged.subtitleDisplayMode = ["bilingual", "translation", "original"].includes(merged.subtitleDisplayMode)
+        ? merged.subtitleDisplayMode : "bilingual";
+    merged.subtitleColor = /^#[0-9a-f]{6}$/i.test(merged.subtitleColor) ? merged.subtitleColor : "#ffffff";
+    merged.subtitleBackgroundOpacity = Number.isFinite(Number(merged.subtitleBackgroundOpacity))
+        ? Math.min(1, Math.max(0, Number(merged.subtitleBackgroundOpacity))) : 0.88;
     merged.subtitleEnabled = merged.subtitleEnabled !== false;
     merged.subtitleTranslationMode = merged.subtitleTranslationMode === "full" ? "full" : "economy";
     merged.subtitleLookAheadMinutes = [1, 2, 3].includes(Number(merged.subtitleLookAheadMinutes))
@@ -184,9 +190,13 @@ function applySettings() {
 
     if (state.overlay) {
         state.overlay.style.setProperty("--ytbt-font-scale", String(state.settings.fontScale));
+        state.overlay.style.setProperty("--ytbt-subtitle-color", state.settings.subtitleColor);
+        state.overlay.style.setProperty("--ytbt-background-opacity", String(state.settings.subtitleBackgroundOpacity));
+        state.overlay.dataset.displayMode = state.settings.subtitleDisplayMode;
         state.overlay.hidden = !state.settings.subtitleEnabled;
         applyOverlayPosition();
     }
+    if (typeof syncPlayerControlsSettings === "function") syncPlayerControlsSettings();
 }
 
 function injectPageBridge() {
@@ -412,6 +422,8 @@ async function handleDriveTranscript(payload) {
 }
 
 async function handlePlayerResponse(payload) {
+    const responseVideoId = String(payload.videoId || "");
+    if (!getUrlVideoId() || responseVideoId === getUrlVideoId()) state.lastPlayerResponse = payload;
     if (!state.settings.subtitleEnabled) {
         setStatus("");
         return;

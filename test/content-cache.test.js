@@ -189,7 +189,7 @@ function loadContent(storage, translations, options = {}) {
   };
   let source = contentScriptSource();
   source = source.replace(
-    /if \(!IS_DRIVE_PLAYER\) \{\n  bindPageMessages\(\);\n  injectPageBridge\(\);\n\}\ninit\(\);\n?$/,
+    /\/\/ --- Bootstrap ---[\s\S]*$/,
     "// Tests initialize explicit state in a fresh page context.\n"
   );
   assert.match(source, /Tests initialize explicit state in a fresh page context/);

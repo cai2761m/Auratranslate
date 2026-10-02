@@ -53,6 +53,7 @@
       "src/background-requests.js",
       "src/background-bing.js",
       "src/background-cache.js",
+      "src/background-summary.js",
       "src/background.js"
     ]
   },
@@ -75,10 +76,12 @@
         "src/content-translation.js",
         "src/content-player.js",
         "src/content-overlay.js",
+        "src/content-controls.js",
         "src/content-main.js"
       ],
       "css": [
-        "src/overlay.css"
+        "src/overlay.css",
+        "src/player-controls.css"
       ],
       "run_at": "document_start"
     },
@@ -152,7 +155,8 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "src/page-bridge.js"
+        "src/page-bridge.js",
+        "icons/icon-32.png"
       ],
       "matches": [
         "https://www.youtube.com/*",

@@ -70,7 +70,7 @@ function loadCaptionApi(fetchImpl) {
 
   let source = contentScriptSource();
   source = source.replace(
-    /if \(!IS_DRIVE_PLAYER\) \{\n  bindPageMessages\(\);\n  injectPageBridge\(\);\n\}\ninit\(\);\n?$/,
+    /\/\/ --- Bootstrap ---[\s\S]*$/,
     "// Initialization is omitted by these isolated caption tests.\n"
   );
   assert.match(source, /Initialization is omitted by these isolated caption tests/);

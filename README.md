@@ -98,7 +98,7 @@ Select the provider and model under **实时字幕** (Video subtitles). **沉浸
 - **Webpages:** click the floating A, or choose your languages and service in the popup and press **翻译当前网页**. The default is automatic source detection → Simplified Chinese.
 - **Display mode:** use the icon beside the Translate button to switch between bilingual and translation-only display.
 - **Site rules:** expand **更多功能** to follow the global setting, always translate the current site, or never translate it. Automatic webpage translation is off by default.
-- **YouTube:** open a video with English captions and leave **视频实时字幕** enabled.
+- **YouTube:** open a video with English captions. The **AuraTranslate icon in the player controls** opens the subtitle switch, style settings, floating transcript, and AI summary. Style settings include bilingual/translation/original display, size, text color, background opacity, and position reset. The transcript supports search, playback following, timestamp seeking, and dragging; it can be opened with translated subtitles turned off.
 - **Google Drive:** open a video with an accessible transcript. The extension briefly opens the transcript panel to read it, then restores the panel.
 
 <br clear="all">
@@ -123,6 +123,8 @@ Select the provider and model under **实时字幕** (Video subtitles). **沉浸
 Source loading is intended for desktop Chrome and Edge. The manifest also declares Firefox desktop **140+** and Firefox for Android **142+**. Normal Firefox installation requires a Mozilla-signed extension package; this repository's source ZIP is not one. Android support applies to webpages in Firefox, not the native YouTube app. Device and website behavior can vary.
 
 Video translation requires existing English captions on YouTube or a transcript accessible through the Google Drive player. There is no audio recording or speech-to-text fallback.
+
+**AI summary** uses the selected subtitle service and model after you click **生成总结** (Generate summary). Opening the panel only checks the cache. Summaries use the existing transcript, are cached locally, and support copying. Requests are not automatically retried after a failure. Whole-video summaries currently accept up to 120,000 transcript characters and 20,000 cues; API charges may apply when generating a new summary.
 
 </details>
 

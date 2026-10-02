@@ -15,13 +15,24 @@ if (typeof importScripts === "function") {
         "background-google.js",
         "background-requests.js",
         "background-bing.js",
-        "background-cache.js"
+        "background-cache.js",
+        "background-summary.js"
     );
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message) {
         return false;
+    }
+
+    if (message.type === "SUMMARIZE_VIDEO") {
+        handleSummarizeVideo(message)
+            .then(sendResponse)
+            .catch((error) => sendResponse({
+                type: "SUMMARIZE_VIDEO_RESULT", ok: false, videoId: message.videoId,
+                error: error && error.message ? error.message : String(error)
+            }));
+        return true;
     }
 
     if (message.type === "TRANSLATE_BATCH") {

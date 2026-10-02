@@ -75,7 +75,7 @@ function syncVideoWithLocation() {
     setStatus("正在切换视频并读取字幕...");
     requestPlayerResponse();
 
-    if (hasTranscriptApi(transcript)) {
+    if (state.settings.subtitleEnabled && hasTranscriptApi(transcript)) {
         loadCaptionTrack(urlVideoId, null, trackFingerprint, transcript);
     }
 }
@@ -204,7 +204,7 @@ function isLikelyNativeCaptionOverlay(node, playerRect) {
     if (Core.isProtectedVideoContainer(node, state.overlay)) {
         return false;
     }
-    if (node.closest(".ytbt-overlay")) {
+    if (node.closest(".ytbt-overlay, .ytbt-player-ui, .ytbt-player-button")) {
         return false;
     }
     if (node.closest("#masthead, ytd-app, ytd-watch-metadata, ytd-comments, ytd-engagement-panel-section-list-renderer") && !node.closest(".html5-video-player, #movie_player")) {

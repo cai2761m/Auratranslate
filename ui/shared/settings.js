@@ -18,6 +18,13 @@ export const storageRemove = (keys) =>
 export const modelLabel = (model) =>
   model.displayName ? `${model.id} · ${model.displayName}` : model.id;
 
+export const THEME_LABELS = { system: "跟随系统", light: "亮色", dark: "暗色" };
+export const nextTheme = (theme) =>
+  ({ system: "light", light: "dark", dark: "system" })[theme] || "light";
+// Repaints the page immediately; persisting the choice is the caller's job.
+// theme-boot.js is absent in jsdom tests, so the call is optional.
+export const applyTheme = (theme) => globalThis.AuraTheme?.apply(theme);
+
 export function normalizeSelection(settings) {
   const services = settings.translationServices;
   const realtime = Core.findTranslationService(
@@ -51,6 +58,7 @@ export function hydrateSettings(saved) {
     immersiveTranslationServiceId: plan.immersiveTranslationServiceId,
     immersiveTranslationModelId: plan.immersiveTranslationModelId,
     fontScale: Core.normalizeFontScale(saved.fontScale),
+    uiTheme: Core.normalizeUiTheme(saved.uiTheme),
   });
 }
 
@@ -96,6 +104,7 @@ export function settingsPatch(settings) {
       ? s.immersiveTranslationJsonResponse !== false
       : true,
     fontScale: Core.normalizeFontScale(s.fontScale),
+    uiTheme: Core.normalizeUiTheme(s.uiTheme),
     subtitleTranslationMode:
       s.subtitleTranslationMode === "full" ? "full" : "economy",
     subtitleLookAheadMinutes: Number(s.subtitleLookAheadMinutes || 2),

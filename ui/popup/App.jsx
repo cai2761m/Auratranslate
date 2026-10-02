@@ -9,6 +9,9 @@ import {
   modelLabel,
   popupSelection,
   popupServicePatch,
+  THEME_LABELS,
+  nextTheme,
+  applyTheme,
 } from "../shared/settings";
 
 const LANGUAGES = [
@@ -103,7 +106,7 @@ export function PopupApp() {
     };
   }, []);
   async function save(values) {
-    if (busy.current || !values) return;
+    if (busy.current || !values) return false;
     busy.current = true;
     setSaving(true);
     try {
@@ -112,9 +115,11 @@ export function PopupApp() {
         setSettings((old) => ({ ...old, ...values }));
         setNotice({ text: "设置已保存" });
       }
+      return true;
     } catch (error) {
       if (alive.current)
         setNotice({ text: `保存失败：${error.message}`, error: true });
+      return false;
     } finally {
       busy.current = false;
       if (alive.current) setSaving(false);
@@ -148,6 +153,13 @@ export function PopupApp() {
       if (alive.current) setStarting(false);
     }
   }
+  async function cycleTheme() {
+    const previous = theme;
+    const next = nextTheme(previous);
+    // Repaint first so the click feels immediate; undo it if nothing was saved.
+    applyTheme(next);
+    if (!(await save({ uiTheme: next }))) applyTheme(previous);
+  }
   function openSettings() {
     if (chrome.runtime.openOptionsPage)
       chrome.runtime.openOptionsPage(() => window.close());
@@ -158,6 +170,7 @@ export function PopupApp() {
       );
   }
   const s = settings || Core.DEFAULT_SETTINGS;
+  const theme = Core.normalizeUiTheme(s.uiTheme);
   const { plan, service, model } = popupSelection(s);
   const translation = s.immersiveDisplayMode === "translation";
   const running = page?.mode === "translating" || starting;
@@ -363,6 +376,18 @@ export function PopupApp() {
         >
           <Icon name="settings" />
           全部设置
+        </button>
+        <button
+          id="theme-toggle"
+          className="text-button icon-only"
+          type="button"
+          disabled={disabled}
+          aria-label={`外观：${THEME_LABELS[theme]}，点击切换`}
+          title={`外观：${THEME_LABELS[theme]}`}
+          data-theme-preference={theme}
+          onClick={cycleTheme}
+        >
+          <Icon name={`theme-${theme}`} />
         </button>
         <button
           id="more-toggle"

@@ -154,6 +154,78 @@ async function main() {
       path: path.join(screenshots, "popup.png"),
       animations: "disabled",
     });
+
+    // Appearance: the preference cycles system -> light -> dark -> system, an
+    // explicit choice overrides the OS, and "system" tracks OS changes live.
+    const theme = () =>
+      page.evaluate(() => ({
+        resolved: document.documentElement.dataset.theme,
+        preference: document.documentElement.dataset.themePreference,
+      }));
+    const stored = () =>
+      page.evaluate(
+        () => JSON.parse(localStorage.getItem("auratranslate-ui-preview")).uiTheme,
+      );
+    // matchMedia change listeners run in the next rendering step, so an
+    // assertion straight after emulateMedia would pass for pinned themes
+    // without testing anything. Wait until the OS switch has been delivered.
+    const setOs = async (scheme) => {
+      await page.emulateMedia({ colorScheme: scheme });
+      await page.waitForFunction(
+        (dark) => matchMedia("(prefers-color-scheme: dark)").matches === dark,
+        scheme === "dark",
+      );
+      await page.evaluate(
+        () => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))),
+      );
+    };
+    const cycleTo = async (preference) => {
+      await page.locator("#theme-toggle").click();
+      await page.waitForFunction(
+        (p) => document.querySelector("#theme-toggle")?.dataset.themePreference === p,
+        preference,
+      );
+    };
+    await page.setViewportSize({ width: 400, height: 600 });
+    await setOs("light");
+    assert.deepEqual(await theme(), { resolved: "light", preference: "system" });
+    await cycleTo("light");
+    await setOs("dark");
+    assert.deepEqual(await theme(), { resolved: "light", preference: "light" }, "pinned light ignores a dark OS");
+    await cycleTo("dark");
+    await setOs("light");
+    assert.deepEqual(await theme(), { resolved: "dark", preference: "dark" }, "pinned dark ignores a light OS");
+    assert.equal(await stored(), "dark", "the choice is persisted to extension storage");
+    await page.locator("main").screenshot({ path: path.join(screenshots, "popup-pinned-dark.png"), animations: "disabled" });
+    // Reload: the localStorage mirror must paint dark before React mounts.
+    await page.reload();
+    assert.equal(
+      await page.evaluate(() => document.documentElement.dataset.theme),
+      "dark",
+      "a reload keeps the pinned theme",
+    );
+    await page.locator("#translate-page:enabled").waitFor();
+    await cycleTo("system");
+    assert.deepEqual(await theme(), { resolved: "light", preference: "system" });
+    await setOs("dark");
+    assert.equal((await theme()).resolved, "dark", "system follows the OS while the page is open");
+    await setOs("light");
+    assert.equal((await theme()).resolved, "light", "system follows the OS back to light");
+    assert.equal(await stored(), "system");
+
+    await page.goto(`${url}/options/options.html`);
+    await page.locator("#tab-general-settings").click();
+    assert.equal(await page.locator('input[name="uiTheme"]:checked').getAttribute("value"), "system");
+    await page.locator('.theme-option:has(input[value="dark"])').click();
+    assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), "dark");
+    await page.screenshot({ path: path.join(screenshots, "general-pinned-dark.png"), fullPage: true, animations: "disabled" });
+    await page.locator('.theme-option:has(input[value="system"])').click();
+    assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), "light");
+    await page.evaluate(() => dispatchEvent(new Event("pagehide")));
+    await page.waitForFunction(
+      () => JSON.parse(localStorage.getItem("auratranslate-ui-preview")).uiTheme === "system",
+    );
+
     await page.goto(`${url}/options/options.html`);
     for (const width of [1280, 1024, 768, 390, 320]) {
       await page.setViewportSize({ width, height: 900 });

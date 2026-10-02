@@ -17,6 +17,8 @@
     FONT_SCALE_MAX: Shared.FONT_SCALE_MAX,
     FONT_SCALE_STEP: Shared.FONT_SCALE_STEP,
     normalizeFontScale: Shared.normalizeFontScale,
+    UI_THEMES: Shared.UI_THEMES,
+    normalizeUiTheme: Shared.normalizeUiTheme,
     DEEPSEEK_MODEL: Shared.DEEPSEEK_MODEL,
     GEMINI_MODEL: Shared.GEMINI_MODEL,
     DEEPSEEK_BASE_URL: Shared.DEEPSEEK_BASE_URL,

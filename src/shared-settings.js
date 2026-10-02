@@ -43,6 +43,10 @@
     llmSentenceSegmentationEnabled: true,
     asrCorrectionEnabled: true,
     showOriginalTechnicalTerms: true,
+    // Appearance. "system" defers to prefers-color-scheme; the explicit values
+    // pin a theme on extension pages. The in-page floating control keeps its own
+    // page-luminance adaptation and ignores this.
+    uiTheme: "system",
     cacheVersion: "1",
     translationCacheMaxItems: 2000
   });
@@ -60,6 +64,12 @@
     return Number.isFinite(scale)
       ? Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, scale))
       : DEFAULT_SETTINGS.fontScale;
+  }
+
+  const UI_THEMES = ["system", "light", "dark"];
+
+  function normalizeUiTheme(value) {
+    return UI_THEMES.includes(value) ? value : DEFAULT_SETTINGS.uiTheme;
   }
 
   const GEMINI_MODEL = "gemini-3.5-flash";
@@ -481,6 +491,8 @@
     FONT_SCALE_MAX,
     FONT_SCALE_STEP,
     normalizeFontScale,
+    UI_THEMES,
+    normalizeUiTheme,
     GEMINI_MODEL,
     MERGE_VERSION,
     SENTENCE_SEGMENTATION_VERSION,

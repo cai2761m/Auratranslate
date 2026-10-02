@@ -1,5 +1,7 @@
 :root {
-  color-scheme: light dark;
+  /* Native form controls and scrollbars follow the resolved theme, not the OS
+     setting, so an explicit light/dark choice also picks the right widgets. */
+  color-scheme: light;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", Roboto, system-ui, sans-serif;
   font-size: 14px;
   color: #0a1628;
@@ -125,61 +127,65 @@ button, input, select { color: inherit; }
   pointer-events: none;
 }
 .brand-mark .ui-icon { width: 24px; height: 24px; }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --canvas: #0a1117;
-    --surface: #0f1620;
-    --surface-glass: rgba(15, 22, 32, 0.92);
-    --subtle: #151d28;
-    --ink: #e8eef5;
-    --muted: #8a98ab;
-    --border: #1e2835;
-    --input-border: #2a3744;
+/* Theme scope.
+   <html data-theme> always holds the RESOLVED theme, "light" or "dark".
+   ui/shared/theme-boot.js sets it before first paint and turns the "system"
+   preference into one of the two (and follows OS changes while it is
+   selected), so the dark palette needs exactly one selector and no
+   prefers-color-scheme duplicate that could drift from it. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #0a1117;
+  --surface: #0f1620;
+  --surface-glass: rgba(15, 22, 32, 0.92);
+  --subtle: #151d28;
+  --ink: #e8eef5;
+  --muted: #8a98ab;
+  --border: #1e2835;
+  --input-border: #2a3744;
 
-    /* Dark mode accent - vibrant cyan */
-    --accent: #06b6d4;
-    --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
-    --accent-solid: #06b6d4;
-    --accent-hover: #22d3ee;
-    --accent-light: #67e8f9;
-    --accent-text: #22d3ee;
-    --soft: #0d2331;
-    --soft-hover: #123042;
+  /* Dark mode accent - vibrant cyan */
+  --accent: #06b6d4;
+  --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+  --accent-solid: #06b6d4;
+  --accent-hover: #22d3ee;
+  --accent-light: #67e8f9;
+  --accent-text: #22d3ee;
+  --soft: #0d2331;
+  --soft-hover: #123042;
 
-    /* Aurora ribbon on the dark canvas. Slightly lifted from the light set
-       (#0e7490 -> #1a5fb4 measures 5.36:1 and 6.29:1 here too), because a
-       deep ribbon on a near-black surface loses its edge entirely. */
-    --aurora-1: #0e7490;
-    --aurora-2: #2563c9;
-    --aurora-gradient: linear-gradient(135deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
-    --aurora-gradient-soft: linear-gradient(135deg, rgba(34, 211, 238, 0.14) 0%, rgba(96, 130, 240, 0.14) 100%);
-    --aurora-ring: rgba(34, 211, 238, 0.6);
-    --aurora-shadow: 0 2px 12px rgba(34, 211, 238, 0.16), 0 1px 4px rgba(96, 130, 240, 0.2);
+  /* Aurora ribbon on the dark canvas. Slightly lifted from the light set
+     (#0e7490 -> #1a5fb4 measures 5.36:1 and 6.29:1 here too), because a
+     deep ribbon on a near-black surface loses its edge entirely. */
+  --aurora-1: #0e7490;
+  --aurora-2: #2563c9;
+  --aurora-gradient: linear-gradient(135deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
+  --aurora-gradient-soft: linear-gradient(135deg, rgba(34, 211, 238, 0.14) 0%, rgba(96, 130, 240, 0.14) 100%);
+  --aurora-ring: rgba(34, 211, 238, 0.6);
+  --aurora-shadow: 0 2px 12px rgba(34, 211, 238, 0.16), 0 1px 4px rgba(96, 130, 240, 0.2);
 
-    --focus: #22d3ee;
-    --focus-ring: 0 0 0 3px rgba(6, 182, 212, 0.2);
+  --focus: #22d3ee;
+  --focus-ring: 0 0 0 3px rgba(6, 182, 212, 0.2);
 
-    --success: #10b981;
-    --success-soft: #0d2d23;
-    --danger: #f87171;
-    --danger-soft: #2d1618;
-    --warning: #fbbf24;
-    --warning-soft: #2d2518;
+  --success: #10b981;
+  --success-soft: #0d2d23;
+  --danger: #f87171;
+  --danger-soft: #2d1618;
+  --warning: #fbbf24;
+  --warning-soft: #2d2518;
 
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.25);
-    --shadow: 0 2px 12px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 28px rgba(0, 0, 0, 0.35);
-    --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6), 0 16px 56px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 28px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6), 0 16px 56px rgba(0, 0, 0, 0.4);
 
-    --glow-accent: 0 2px 16px rgba(6, 182, 212, 0.15);
+  --glow-accent: 0 2px 16px rgba(6, 182, 212, 0.15);
 
-    color: var(--ink);
-    background: var(--canvas);
-  }
-
-  .brand-mark {
-    box-shadow: var(--shadow-md);
-  }
+  color: var(--ink);
+  background: var(--canvas);
+}
+:root[data-theme="dark"] .brand-mark {
+  box-shadow: var(--shadow-md);
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

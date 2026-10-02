@@ -931,6 +931,87 @@ button.service-entry:hover .service-avatar {
   }
 }
 
+/* Appearance: three options in the same segmented language as the popup. */
+.theme-choice {
+  margin: 28px 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.theme-choice legend.preference-heading {
+  margin: 0 0 14px;
+  padding: 0;
+}
+.theme-options {
+  display: flex;
+  gap: 5px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--subtle);
+}
+.theme-option {
+  position: relative;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.theme-option:hover {
+  color: var(--accent-text);
+  background: var(--soft);
+}
+/* The native radio stays in the tab order and in the accessibility tree; it
+   is only visually replaced by the label's selected state. */
+.theme-option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.theme-option .ui-icon {
+  width: 17px;
+  height: 17px;
+}
+.theme-option:has(input:checked) {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--accent-text);
+  box-shadow: var(--shadow-sm);
+}
+.theme-option:has(input:checked)::after {
+  content: '';
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
+}
+.theme-option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.theme-choice > small {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

@@ -8,6 +8,9 @@ const paths = {
   arrow: "M5 12h14m-5-5 5 5-5 5",
   chevron: "m8 10 4 4 4-4",
   plus: "M12 5v14M5 12h14",
+  // The mark on the floating control: a two-peak ribbon. Used as the brand
+  // mark so it stops competing with the translate glyph on the action button.
+  aurora: "M3 17 8.5 7 13 14.5 17 9.5 21 17",
 };
 
 export function Icon({ name, className = "" }) {

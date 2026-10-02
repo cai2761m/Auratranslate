@@ -191,7 +191,7 @@ export function PopupApp() {
       <header className="popup-header">
         <div className="brand">
           <span className="brand-mark" aria-hidden="true">
-            <Icon name="translate" />
+            <Icon name="aurora" />
           </span>
           <div>
             <h1>AuraTranslate</h1>

@@ -107,7 +107,7 @@ export function OptionsApp() {
       <header className="page-header">
         <div className="brand">
           <span className="brand-mark">
-            <Icon name="translate" />
+            <Icon name="aurora" />
           </span>
           <span className="brand-name">AuraTranslate</span>
           <span className="header-divider" />

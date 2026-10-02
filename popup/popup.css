@@ -44,7 +44,7 @@ h1::after {
   left: 0;
   width: 30px;
   height: 2px;
-  background: var(--accent-solid);
+  background: var(--aurora-gradient);
   border-radius: 2px;
 }
 .brand-caption {
@@ -66,14 +66,27 @@ h1::after {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 0 0 20px;
+  margin: 0 0 16px;
   padding: 10px 12px;
   color: var(--muted);
   font-size: 11px;
   background: var(--subtle);
   border-radius: 10px;
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent-solid);
+  position: relative;
+  overflow: hidden;
+}
+/* The one gradient rail in the popup: it marks the context strip, the only
+   element here that reports state instead of taking input. Vertical, because
+   a 135deg sweep has no room to show across 4px. */
+.current-page::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
 }
 .current-page .ui-icon {
   width: 15px;
@@ -96,8 +109,8 @@ h1::after {
   border-radius: 6px;
   font-weight: 600;
   font-size: 10px;
-  border: 1px solid var(--accent-solid);
-  border-opacity: 0.2;
+  /* border-opacity is not a CSS property; the alpha belongs in the colour. */
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
 }
 .language-pair {
   display: grid;
@@ -107,21 +120,8 @@ h1::after {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-sm);
   position: relative;
-  overflow: hidden;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.language-pair::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 3px;
-  height: 100%;
-  background: var(--accent-solid);
-  border-radius: 0 2px 2px 0;
-  opacity: 0.6;
 }
 .select-field { display: block; min-width: 0; }
 .select-field > span, legend {
@@ -171,14 +171,14 @@ select:focus {
   opacity: 0.7;
 }
 .service-card {
-  margin-top: 14px;
+  margin-top: 12px;
   padding: 6px 16px;
   border: 1px solid var(--border);
   border-radius: 16px;
   background: var(--surface);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(10px);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Same surface language as .language-pair: one border, one low shadow.
+     The backdrop-filter had nothing to blur behind an opaque fill. */
+  box-shadow: var(--shadow-sm);
 }
 .service-field {
   display: grid;
@@ -271,31 +271,25 @@ select:focus {
   height: 48px;
   border: 0;
   border-radius: 12px;
-  background: var(--accent-solid);
+  /* The one place the Aurora ribbon is allowed to be a full surface. Horizontal
+     so the sweep tracks the button's own long axis. */
+  background: linear-gradient(100deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
+  background-size: 160% 160%;
+  background-position: 0% 50%;
   color: #fff;
   font-size: 14px;
   font-weight: 600;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--aurora-shadow);
   position: relative;
   overflow: hidden;
-}
-.primary::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 60%);
-  opacity: 0;
-  transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.primary:hover:not(:disabled)::before {
-  opacity: 1;
+  transition: background-position 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .primary:hover:not(:disabled) {
-  background: var(--accent-hover);
-  box-shadow: var(--shadow-lg);
+  /* Sliding the gradient reads as a shimmer without changing hue. */
+  background-position: 100% 50%;
+  box-shadow: 0 4px 18px rgba(34, 211, 238, 0.3), 0 2px 6px rgba(99, 102, 241, 0.24);
   transform: translateY(-1px);
 }
 .primary:active:not(:disabled) {
@@ -461,8 +455,23 @@ legend {
   background: var(--surface);
   color: var(--accent-text);
   border-color: var(--border);
-  box-shadow: 0 2px 6px rgba(31, 25, 45, 0.08), 0 1px 3px rgba(31, 25, 45, 0.04);
+  /* Was rgba(31, 25, 45, ...) -- a violet-tinted shadow left over from the
+     previous palette, which read as grubby against the teal accent. */
+  box-shadow: var(--shadow-sm);
   font-weight: 700;
+  position: relative;
+}
+/* Selected state carries the brand colour as a rail rather than a fill, so a
+   row of three options does not become three competing blocks of colour. */
+.segmented button[aria-pressed="true"]::after {
+  content: '';
+  position: absolute;
+  left: 20%;
+  right: 20%;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
 }
 .popup-toggle {
   display: flex;
@@ -516,7 +525,7 @@ legend {
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .popup-toggle input:checked {
-  background: var(--accent-solid);
+  background: linear-gradient(90deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 .popup-toggle input:checked::before {

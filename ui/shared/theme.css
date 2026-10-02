@@ -28,6 +28,24 @@
   --soft: #ecfeff;
   --soft-hover: #cffafe;
 
+  /* Aurora identity.
+     The floating control was the only part that already read as "Aurora": a
+     ribbon over a dark glass ball, using #70e7c5 / #82cafa / #b19afa -- a
+     three-hue rainbow shared by no other surface. These tokens pull that
+     ribbon to two stops so one brand colour runs through the extension pages
+     and the in-page control.
+     Gradient stops are deliberately DEEP. White text sits on the ribbon, and
+     the brighter teals the interface uses for accents and focus rings fail
+     4.5:1 against white (#0891b2 measures 3.68:1). Both stops here pass:
+     #0e7490 5.36:1 and #1a5fb4 6.29:1, with dE 40 -- legible as a gradient
+     without smearing into a rainbow across a wide button. */
+  --aurora-1: #0e7490;
+  --aurora-2: #1a5fb4;
+  --aurora-gradient: linear-gradient(135deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
+  --aurora-gradient-soft: linear-gradient(135deg, rgba(14, 116, 144, 0.10) 0%, rgba(26, 95, 180, 0.10) 100%);
+  --aurora-ring: rgba(14, 116, 144, 0.5);
+  --aurora-shadow: 0 2px 10px rgba(14, 116, 144, 0.24), 0 1px 3px rgba(26, 95, 180, 0.2);
+
   /* Focus & interaction */
   --focus: #22d3ee;
   --focus-ring: 0 0 0 3px rgba(8, 145, 178, 0.15);
@@ -85,12 +103,17 @@ button, input, select { color: inherit; }
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  background: var(--accent-solid);
+  /* Steeper than the shared ribbon: across 40px a 135deg sweep reads as a
+     flat fill, so the brand mark leans the stops toward the corners where
+     they can actually be seen. */
+  background: linear-gradient(150deg, var(--aurora-1) 0%, var(--aurora-2) 78%);
   color: #fff;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--aurora-shadow);
   position: relative;
   overflow: hidden;
 }
+/* The sheen made the flat fill look grubby; on the ribbon it reads as a light
+   source. Kept because it now has something to sit on. */
 .brand-mark::before {
   content: '';
   position: absolute;
@@ -98,7 +121,7 @@ button, input, select { color: inherit; }
   left: -50%;
   width: 200%;
   height: 200%;
-  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 60%);
+  background: linear-gradient(135deg, rgba(255,255,255,0.28) 0%, transparent 55%);
   pointer-events: none;
 }
 .brand-mark .ui-icon { width: 24px; height: 24px; }
@@ -122,6 +145,16 @@ button, input, select { color: inherit; }
     --accent-text: #22d3ee;
     --soft: #0d2331;
     --soft-hover: #123042;
+
+    /* Aurora ribbon on the dark canvas. Slightly lifted from the light set
+       (#0e7490 -> #1a5fb4 measures 5.36:1 and 6.29:1 here too), because a
+       deep ribbon on a near-black surface loses its edge entirely. */
+    --aurora-1: #0e7490;
+    --aurora-2: #2563c9;
+    --aurora-gradient: linear-gradient(135deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
+    --aurora-gradient-soft: linear-gradient(135deg, rgba(34, 211, 238, 0.14) 0%, rgba(96, 130, 240, 0.14) 100%);
+    --aurora-ring: rgba(34, 211, 238, 0.6);
+    --aurora-shadow: 0 2px 12px rgba(34, 211, 238, 0.16), 0 1px 4px rgba(96, 130, 240, 0.2);
 
     --focus: #22d3ee;
     --focus-ring: 0 0 0 3px rgba(6, 182, 212, 0.2);

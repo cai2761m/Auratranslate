@@ -8,6 +8,7 @@
     "build": "node scripts/build-ui.cjs",
     "build:check": "node scripts/build-ui.cjs --check",
     "dev": "node scripts/build-ui.cjs --watch",
+    "icons": "node scripts/build-icons.cjs",
     "pretest": "npm run build:check",
     "preview": "node scripts/preview-ui.cjs",
     "test:ui:browser": "npm run build:check && node scripts/check-ui-browser.cjs"

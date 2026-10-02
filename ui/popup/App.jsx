@@ -211,9 +211,7 @@ export function PopupApp() {
         <main className={`popup${more ? " more-open" : ""}`}>
             <header className="popup-header">
                 <div className="brand">
-          <span className="brand-mark" aria-hidden="true">
-            <Icon name="aurora"/>
-          </span>
+                    <img className="brand-mark" src="../icons/icon.svg" alt=""/>
                     <div>
                         <h1>AuraTranslate</h1>
                         <p className="brand-caption">让阅读跨越语言</p>

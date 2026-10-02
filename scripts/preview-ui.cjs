@@ -15,7 +15,7 @@ function createPreviewServer() {
       url.pathname === "/" ? "options/options.html" : url.pathname.slice(1);
     if (file === "preview.js") file = "scripts/preview-ui-browser.js";
     if (
-      !/^(?:(?:options|popup)\/(?:options|popup)\.(?:html|css|js)|ui\/shared\/theme(?:\.css|-boot\.js)|src\/shared(?:-[a-z]+)?\.js|scripts\/preview-ui-browser\.js)$/.test(
+      !/^(?:(?:options|popup)\/(?:options|popup)\.(?:html|css|js)|ui\/shared\/theme(?:\.css|-boot\.js)|icons\/icon(?:-\d+\.png|\.svg)|src\/shared(?:-[a-z]+)?\.js|scripts\/preview-ui-browser\.js)$/.test(
         file,
       )
     ) {
@@ -37,7 +37,11 @@ function createPreviewServer() {
           ? "text/html; charset=utf-8"
           : file.endsWith(".css")
             ? "text/css"
-            : "text/javascript; charset=utf-8",
+            : file.endsWith(".svg")
+              ? "image/svg+xml"
+              : file.endsWith(".png")
+                ? "image/png"
+                : "text/javascript; charset=utf-8",
         "Cache-Control": "no-store",
         "Content-Security-Policy": "script-src 'self'; object-src 'self'",
       });

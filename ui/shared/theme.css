@@ -137,38 +137,16 @@ button, input, select {
     gap: 12px;
 }
 
+/* The extension icon itself (icons/icon.svg, from scripts/build-icons.cjs), so
+   the page header and the browser toolbar show the same mark. The radius
+   matches the tile's 24% so the shadow follows its corners. */
 .brand-mark {
-    display: grid;
-    place-items: center;
+    display: block;
+    flex: 0 0 auto;
     width: 40px;
     height: 40px;
-    border-radius: 12px;
-    /* Steeper than the shared ribbon: across 40px a 135deg sweep reads as a
-       flat fill, so the brand mark leans the stops toward the corners where
-       they can actually be seen. */
-    background: linear-gradient(150deg, var(--aurora-1) 0%, var(--aurora-2) 78%);
-    color: #fff;
-    box-shadow: var(--aurora-shadow);
-    position: relative;
-    overflow: hidden;
-}
-
-/* The sheen made the flat fill look grubby; on the ribbon it reads as a light
-   source. Kept because it now has something to sit on. */
-.brand-mark::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0%, transparent 55%);
-    pointer-events: none;
-}
-
-.brand-mark .ui-icon {
-    width: 24px;
-    height: 24px;
+    border-radius: 24%;
+    box-shadow: 0 2px 8px rgba(23, 33, 58, 0.22), 0 1px 2px rgba(23, 33, 58, 0.18);
 }
 
 /* Theme scope.
@@ -227,10 +205,6 @@ button, input, select {
 
     color: var(--ink);
     background: var(--canvas);
-}
-
-:root[data-theme="dark"] .brand-mark {
-    box-shadow: var(--shadow-md);
 }
 
 @media (prefers-reduced-motion: reduce) {

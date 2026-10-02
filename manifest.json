@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AuraTranslate",
-  "version": "0.3.17",
+  "version": "0.3.2",
   "description": "AuraTranslate - AI bilingual subtitles and immersive webpage translation on desktop and Android Firefox",
   "icons": {
     "16": "icons/icon-16.png",

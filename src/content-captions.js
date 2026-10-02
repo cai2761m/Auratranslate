@@ -77,7 +77,7 @@ function isSourceTrack(track) {
   const languageCode = String(track.languageCode || "").toLowerCase();
   const vssId = String(track.vssId || "").toLowerCase();
   const name = String(track.name || "").toLowerCase();
-  
+
   return languageCode === sourceLang || languageCode.startsWith(sourceLang + "-") || vssId.includes(`.${sourceLang}`) || name.includes(sourceLang);
 }
 
@@ -85,14 +85,14 @@ function scoreTrack(track) {
   const sourceLang = String(state.settings.sourceLanguage || "en").toLowerCase();
   const languageCode = String(track.languageCode || "").toLowerCase();
   const isAsr = String(track.kind || "").toLowerCase() === "asr";
-  
+
   let languageScore = 10;
   if (languageCode === sourceLang) {
     languageScore = 0;
   } else if (languageCode.startsWith(sourceLang + "-")) {
     languageScore = 2;
   }
-  
+
   // Manual tracks should have LOWER score (higher priority than ASR)
   return (isAsr ? 20 : 0) + languageScore;
 }
@@ -148,14 +148,14 @@ function isCurrentCaptionLoad(videoId, trackFingerprint, token) {
 
 function validPreparedCaptionCache(value, videoId) {
   if (!value || ![1, 2].includes(value.version) || value.videoId !== videoId ||
-      !value.trackFingerprint || !Array.isArray(value.cues) || !value.cues.length) return false;
+    !value.trackFingerprint || !Array.isArray(value.cues) || !value.cues.length) return false;
   const ids = new Set();
   return value.cues.every((cue, index) => {
     if (!cue || cue.id == null || !String(cue.id) || ids.has(String(cue.id)) ||
-        !Number.isFinite(cue.startMs) || !Number.isFinite(cue.endMs) || cue.startMs < 0 ||
-        cue.endMs <= cue.startMs || typeof cue.sourceText !== "string" || !Core.normalizeSubtitleText(cue.sourceText) ||
-        (index > 0 && cue.startMs < value.cues[index - 1].startMs) ||
-        (cue.pendingWindow != null && (value.version !== 2 || !/^w:\d+$/.test(cue.pendingWindow)))) return false;
+      !Number.isFinite(cue.startMs) || !Number.isFinite(cue.endMs) || cue.startMs < 0 ||
+      cue.endMs <= cue.startMs || typeof cue.sourceText !== "string" || !Core.normalizeSubtitleText(cue.sourceText) ||
+      (index > 0 && cue.startMs < value.cues[index - 1].startMs) ||
+      (cue.pendingWindow != null && (value.version !== 2 || !/^w:\d+$/.test(cue.pendingWindow)))) return false;
     ids.add(String(cue.id));
     return true;
   });

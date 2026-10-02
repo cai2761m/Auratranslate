@@ -9,7 +9,7 @@ function persistTranslationCache(request) {
   // The read, merge, eviction and write form one operation. Parallel batches
   // must not each overwrite the same video's cache from an older snapshot.
   const write = translationCacheWriteQueue.then(() => writeTranslationCache(request));
-  translationCacheWriteQueue = write.catch(() => {});
+  translationCacheWriteQueue = write.catch(() => { });
   return write;
 }
 

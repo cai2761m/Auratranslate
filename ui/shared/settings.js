@@ -59,6 +59,7 @@ export function hydrateSettings(saved) {
         immersiveTranslationServiceId: plan.immersiveTranslationServiceId,
         immersiveTranslationModelId: plan.immersiveTranslationModelId,
         fontScale: Core.normalizeFontScale(saved.fontScale),
+        immersiveDisabledSites: Core.normalizeDisabledSites(saved.immersiveDisabledSites),
         uiTheme: Core.normalizeUiTheme(saved.uiTheme),
     });
 }
@@ -105,6 +106,7 @@ export function settingsPatch(settings) {
             ? s.immersiveTranslationJsonResponse !== false
             : true,
         fontScale: Core.normalizeFontScale(s.fontScale),
+        immersiveDisabledSites: Core.normalizeDisabledSites(s.immersiveDisabledSites),
         uiTheme: Core.normalizeUiTheme(s.uiTheme),
         subtitleTranslationMode:
             s.subtitleTranslationMode === "full" ? "full" : "economy",

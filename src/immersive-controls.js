@@ -33,6 +33,62 @@
 
         ballContainer.appendChild(ball);
 
+        const dismiss = document.createElement("button");
+        dismiss.type = "button";
+        dismiss.className = "ytbt-immersive-dismiss";
+        dismiss.title = "关闭悬浮小球";
+        dismiss.setAttribute("aria-label", "关闭悬浮小球");
+        dismiss.setAttribute("aria-haspopup", "dialog");
+        dismiss.setAttribute("aria-expanded", "false");
+        dismiss.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
+        ballContainer.appendChild(dismiss);
+
+        const dismissMenu = document.createElement("div");
+        dismissMenu.className = "ytbt-immersive-dismiss-menu";
+        dismissMenu.dataset.ytbtImmersiveRoot = "true";
+        dismissMenu.setAttribute("role", "dialog");
+        dismissMenu.setAttribute("aria-label", "关闭悬浮小球");
+        dismissMenu.hidden = true;
+        dismissMenu.innerHTML = '<button type="button" data-dismiss="session">本次关闭（刷新后恢复）</button><button type="button" data-dismiss="site">禁用本网站</button><p role="status" hidden></p>';
+        dismiss.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            dismissMenu.hidden = !dismissMenu.hidden;
+            dismiss.setAttribute("aria-expanded", String(!dismissMenu.hidden));
+            ballContainer.dataset.ytbtDismissOpen = String(!dismissMenu.hidden);
+            positionDismissMenu();
+            if (!dismissMenu.hidden) dismissMenu.querySelector("button").focus();
+            syncPanel();
+        });
+        dismissMenu.addEventListener("click", async (event) => {
+            const action = event.target.closest("[data-dismiss]")?.dataset.dismiss;
+            if (!action) return;
+            event.stopPropagation();
+            if (action === "session") {
+                state.controlDismissed = true;
+                syncControlVisibility();
+                return;
+            }
+            try {
+                const stored = await App.storageGet({immersiveDisabledSites: []});
+                const sites = [...new Set([...(Array.isArray(stored.immersiveDisabledSites) ? stored.immersiveDisabledSites : []), location.hostname.toLowerCase()])];
+                await App.storageSet({immersiveDisabledSites: sites});
+                state.preferences.immersiveDisabledSites = sites;
+                syncControlVisibility();
+            } catch (error) {
+                const message = dismissMenu.querySelector("p");
+                message.textContent = "保存失败，请稍后重试。";
+                message.hidden = false;
+            }
+        });
+        dismissMenu.addEventListener("keydown", (event) => {
+            event.stopPropagation();
+            if (event.key === "Escape") { closeDismissMenu(); dismiss.focus(); }
+        });
+        document.addEventListener("pointerdown", (event) => {
+            if (!event.target.closest?.(".ytbt-immersive-dismiss-menu, .ytbt-immersive-tab")) closeDismissMenu();
+        });
+
         const panel = document.createElement("div");
         panel.className = "ytbt-immersive-panel";
         panel.dataset.ytbtImmersiveRoot = "true";
@@ -52,15 +108,40 @@
         panel.addEventListener("pointerleave", handleControlPointerLeave);
         document.body.appendChild(ballContainer);
         document.body.appendChild(panel);
+        document.body.appendChild(dismissMenu);
 
         state.ball = ballContainer;
         state.ballText = null;
         state.panel = panel;
+        state.dismissMenu = dismissMenu;
         loadBallPosition();
         updateBallMode("idle");
         updateBallTheme();
         observePageTheme();
-        state.preferencesReady.then(maybeAutoTranslate);
+        syncControlVisibility();
+        state.preferencesReady.then(() => { syncControlVisibility(); maybeAutoTranslate(); });
+    }
+
+    function isSiteDisabled() {
+        return Array.isArray(state.preferences.immersiveDisabledSites) && state.preferences.immersiveDisabledSites.includes(location.hostname.toLowerCase());
+    }
+
+    function closeDismissMenu() {
+        if (state.dismissMenu) state.dismissMenu.hidden = true;
+        if (state.ball) {
+            state.ball.dataset.ytbtDismissOpen = "false";
+            state.ball.querySelector(".ytbt-immersive-dismiss")?.setAttribute("aria-expanded", "false");
+        }
+    }
+
+    function syncControlVisibility() {
+        if (!state.ball) return;
+        state.ball.hidden = Boolean(state.controlDismissed || isSiteDisabled());
+        if (state.ball.hidden) {
+            closeDismissMenu();
+            state.pointerOverControl = false;
+        }
+        syncPanel();
     }
 
     function observePageTheme() {
@@ -94,6 +175,9 @@
         const brightness = samplePageBrightness(pageElement);
         state.ball.dataset.ytbtTheme = brightness >= 0.5 ? "light" : "dark";
         if (state.panel) state.panel.dataset.ytbtTheme = state.ball.dataset.ytbtTheme;
+        if (state.dismissMenu) state.dismissMenu.dataset.ytbtTheme = state.ball.dataset.ytbtTheme;
+        positionStatusPanel();
+        positionDismissMenu();
     }
 
     function samplePageBrightness(element) {
@@ -133,9 +217,11 @@
         } catch (_) { /* Manual translation can still report a storage error. */
         }
         applyDisplayMode();
+        syncControlVisibility();
     }
 
     function maybeAutoTranslate() {
+        if (state.controlDismissed || isSiteDisabled()) return;
         const rule = state.preferences.immersiveSiteRules?.[location.hostname];
         const enabled = rule === "always" || (rule !== "never" && state.preferences.immersiveAutoTranslate === true);
         if (enabled && state.ball && !state.translated && state.mode === "idle") App.translateCurrentPage();
@@ -197,6 +283,7 @@
     }
 
     function handleBallPointerDown(event) {
+        if (event.target.closest?.(".ytbt-immersive-dismiss")) return;
         if (event.pointerType === "mouse" && event.button !== 0) {
             return;
         }
@@ -312,13 +399,11 @@
         state.ballTopPct = topPct;
 
         if (state.ball) {
-            const edge = BALL_EDGE_PADDING_PX + (state.ball.offsetHeight || 44) / 2;
+            const edge = BALL_EDGE_PADDING_PX + (state.ball.offsetHeight || 38) / 2;
             state.ball.style.top = `clamp(${edge}px, ${topPct}%, calc(100% - ${edge}px))`;
             updateBallTheme();
         }
-        if (state.panel) {
-            state.panel.style.top = `min(calc(${topPct}% + 30px), calc(100vh - 64px))`;
-        }
+        positionStatusPanel();
     }
 
     async function loadBallPosition() {
@@ -402,14 +487,34 @@
         if (panel.textContent !== text) {
             panel.textContent = text;
         }
-        panel.hidden = !text || !state.pointerOverControl;
+        panel.hidden = !text || !state.pointerOverControl || state.ball?.hidden || Boolean(state.dismissMenu && !state.dismissMenu.hidden);
         if (state.ball) state.ball.dataset.ytbtHasStatus = String(Boolean(text));
+        positionStatusPanel();
+    }
+
+    function positionStatusPanel() {
+        if (!state.ball || !state.panel || state.panel.hidden) return;
+        const rect = state.ball.getBoundingClientRect();
+        const height = state.panel.getBoundingClientRect().height;
+        const below = rect.bottom + 12;
+        const top = below + height <= window.innerHeight - 8 ? below : rect.top - height - 12;
+        state.panel.style.top = `${Math.max(8, top)}px`;
+    }
+
+    function positionDismissMenu() {
+        if (!state.ball || !state.dismissMenu || state.dismissMenu.hidden) return;
+        const rect = state.ball.getBoundingClientRect();
+        const height = state.dismissMenu.getBoundingClientRect().height;
+        const below = rect.bottom + 12;
+        state.dismissMenu.style.top = `${Math.max(8, below + height <= window.innerHeight - 8 ? below : rect.top - height - 12)}px`;
     }
 
     Object.assign(App, {
         mountControls,
         loadPreferences,
         maybeAutoTranslate,
+        syncControlVisibility,
+        isSiteDisabled,
         applyDisplayMode,
         restoreOriginalNodes,
         updateBallMode,

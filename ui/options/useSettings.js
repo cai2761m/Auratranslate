@@ -67,25 +67,40 @@ export function useSettings() {
         };
         window.addEventListener("pagehide", flush);
         document.addEventListener("visibilitychange", hide);
+        const followDisabledSites = (changes, area) => {
+            if (area !== "local" || !changes.immersiveDisabledSites || !current.current) return;
+            const sites = Core.normalizeDisabledSites(changes.immersiveDisabledSites.newValue);
+            if (JSON.stringify(sites) === JSON.stringify(current.current.immersiveDisabledSites)) return;
+            current.current = {...current.current, immersiveDisabledSites: sites};
+            if (pending.current && Object.hasOwn(pending.current, "immersiveDisabledSites")) pending.current.immersiveDisabledSites = sites;
+            setSettings(current.current);
+        };
+        chrome.storage.onChanged?.addListener(followDisabledSites);
         return () => {
             cancelled = true;
             mounted.current = false;
             flush();
             window.removeEventListener("pagehide", flush);
             document.removeEventListener("visibilitychange", hide);
+            chrome.storage.onChanged?.removeListener?.(followDisabledSites);
         };
     }, []);
 
     function update(patch, immediate = true) {
+        const changes = typeof patch === "function" ? patch(current.current) : patch;
+        const persistSites = Object.hasOwn(changes, "immersiveDisabledSites") ||
+            Boolean(pending.current && Object.hasOwn(pending.current, "immersiveDisabledSites"));
         const next = normalizeSelection({
             ...current.current,
-            ...(typeof patch === "function" ? patch(current.current) : patch),
+            ...changes,
         });
         current.current = next;
         setSettings(next);
         revision.current++;
         // Snapshot now so subsequent edits cannot mutate a queued storage write.
         pending.current = JSON.parse(JSON.stringify(settingsPatch(next)));
+        // The website and settings both own this list; unrelated edits must not overwrite it.
+        if (!persistSites) delete pending.current.immersiveDisabledSites;
         setStatus("正在保存修改…");
         clearTimeout(timer.current);
         if (immediate) flush();

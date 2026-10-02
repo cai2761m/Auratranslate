@@ -40,27 +40,6 @@ h1 {
     white-space: nowrap;
 }
 
-.save-note {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 5px 11px;
-    border-radius: 999px;
-    background: var(--success-soft);
-    color: var(--success);
-    font-size: 11.5px;
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-.save-note::before {
-    content: "";
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: currentColor;
-}
-
 /* ---------- Layout and sub-page navigation ---------- */
 .settings-layout {
     display: grid;
@@ -228,6 +207,8 @@ h2 {
     margin-top: 0;
 }
 
+.settings-section > .toggle + .preference-heading { margin-top: 32px; }
+
 /* ---------- Form fields ---------- */
 .field {
     display: grid;
@@ -239,6 +220,7 @@ h2 {
 }
 
 .field input,
+.disabled-site-add input,
 .field select,
 .model-row input,
 .detail-model-row input {
@@ -255,6 +237,7 @@ h2 {
 }
 
 .field input:hover,
+.disabled-site-add input:hover,
 .field select:hover,
 .model-row input:hover,
 .detail-model-row input:hover {
@@ -262,6 +245,7 @@ h2 {
 }
 
 .field input:focus,
+.disabled-site-add input:focus,
 .field select:focus,
 .model-row input:focus,
 .detail-model-row input:focus {
@@ -1293,11 +1277,6 @@ button.service-entry[aria-current="true"]::before {
         height: 34px;
     }
 
-    /* The autosave line at the foot of the panel already reports saving. */
-    .save-note {
-        display: none;
-    }
-
     .panel {
         padding: 22px 16px;
         border-radius: 16px;
@@ -1368,6 +1347,14 @@ button.service-entry[aria-current="true"]::before {
 }
 
 /* Three appearance options with icons do not fit a 320px phone. */
+.disabled-sites-settings { margin-top: 32px; }
+.disabled-site-add { display: flex; gap: 8px; }
+.disabled-site-add input { flex: 1; min-width: 0; }
+.disabled-site-add button { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.disabled-site-list { list-style: none; padding: 0; margin: 12px 0; }
+.disabled-site-list li { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); padding: 8px 0; }
+.disabled-site-list li > span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.disabled-sites-settings .icon-button { color: var(--muted); }
 @media (max-width: 380px) {
     .theme-option .ui-icon {
         display: none;

@@ -8,6 +8,8 @@ async function checkFloatingControl(browser, screenshots) {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   try {
+    await page.route("https://floating.example/**", (route) => route.fulfill({body: "<!doctype html><html><body></body></html>"}));
+    await page.goto("https://floating.example/");
     await page.setContent(`<!doctype html><html lang="zh-CN"><head><style>
       body { margin: 0; background: #faf9fc; color: #292735; font: 16px/1.8 "Microsoft YaHei", sans-serif; }
       body.dark { background: #19191f; color: #eeedf4; }
@@ -123,13 +125,14 @@ async function checkFloatingControl(browser, screenshots) {
     assert.equal(await control.evaluate((el) => getComputedStyle(el, "::before").animationName), "none", "reduced motion also stops the aurora curtain");
     await page.setViewportSize({ width: 320, height: 640 });
     const mobileRect = await control.boundingBox();
-    assert.equal(mobileRect.width, 44);
+    assert.equal(mobileRect.width, 38);
     assert.ok(mobileRect.x >= 0 && mobileRect.x + mobileRect.width <= 320);
     // Saved near-edge positions must remain reachable on short mobile views.
     await page.evaluate(() => {
       window.previewStorage.immersiveBallTopPct = 96;
       window.YTBTImmersive.state.ball.remove();
       window.YTBTImmersive.state.panel.remove();
+      window.YTBTImmersive.state.dismissMenu.remove();
       window.YTBTImmersive.state.ball = null;
       window.YTBTImmersive.mountControls();
     });
@@ -138,6 +141,37 @@ async function checkFloatingControl(browser, screenshots) {
     const shortRect = await control.boundingBox();
     assert.ok(shortRect.y >= 8 && shortRect.y + shortRect.height <= 232, "saved position respects viewport edges");
     await page.screenshot({ path: path.join(screenshots, "floating-mobile.png"), animations: "disabled" });
+    await page.setViewportSize({width: 900, height: 640});
+    await page.evaluate(() => window.YTBTImmersive.updateBallMode("idle"));
+    await control.hover();
+    const dismiss = page.locator(".ytbt-immersive-dismiss");
+    const menu = page.locator(".ytbt-immersive-dismiss-menu");
+    assert.equal(await dismiss.evaluate((el) => getComputedStyle(el).opacity), "1");
+    await dismiss.click();
+    assert.equal(await menu.isVisible(), true);
+    assert.equal(await panel.isVisible(), false, "status and close menu do not overlap");
+    await page.screenshot({path: path.join(screenshots, "floating-dismiss.png"), animations: "disabled"});
+    await page.locator('[data-dismiss="session"]').click();
+    assert.equal(await control.isVisible(), false);
+    assert.equal(await page.evaluate(() => previewStorage.immersiveDisabledSites), undefined);
+    await page.evaluate(() => {
+      const app = window.YTBTImmersive;
+      app.state.controlDismissed = false;
+      app.syncControlVisibility();
+    });
+    assert.equal(await control.isVisible(), true);
+    await control.hover();
+    await dismiss.click();
+    await page.locator('[data-dismiss="site"]').click();
+    await page.waitForFunction(() => document.querySelector(".ytbt-immersive-tab").hidden);
+    assert.deepEqual(await page.evaluate(() => previewStorage.immersiveDisabledSites), ["floating.example"]);
+    await page.evaluate(() => {
+      const app = window.YTBTImmersive;
+      app.state.preferences.immersiveDisabledSites = [];
+      app.syncControlVisibility();
+    });
+    assert.equal(await control.isVisible(), true, "removing the site restores the control");
+    assert.equal(await page.evaluate(() => previewCalls), 1, "close choices never translate");
     assert.deepEqual(errors, []);
   } finally {
     await page.close();

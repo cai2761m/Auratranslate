@@ -75,6 +75,25 @@ test("player button survives replacement without duplicate menus and follows ext
     assert.equal(f.win.state.cues[0].translatedText, "你好世界");
 });
 
+test("player menus follow page theme and panels mount outside the video", async (t) => {
+    const f = fixture(t);
+    assert.equal(f.$(".ytbt-player-ui").parentElement, f.win.document.body);
+    assert.equal(f.$(".ytbt-player-menu header, .ytbt-player-menu [data-action='close-menu']"), null);
+    f.win.document.body.style.backgroundColor = "rgb(15, 15, 15)";
+    f.win.updatePlayerControls();
+    assert.equal(f.$(".ytbt-player-ui").dataset.theme, "dark");
+    f.win.document.body.style.backgroundColor = "white";
+    f.win.updatePlayerControls();
+    assert.equal(f.$(".ytbt-player-ui").dataset.theme, "light");
+    f.win.document.documentElement.setAttribute("dark", "");
+    f.win.updatePlayerControls();
+    assert.equal(f.$(".ytbt-player-ui").dataset.theme, "dark");
+    await f.win.handlePlayerControlAction("transcript");
+    assert.equal(f.win.document.documentElement.classList.contains("ytbt-player-panel-open"), true);
+    await f.win.handlePlayerControlAction("close-panel");
+    assert.equal(f.win.document.documentElement.classList.contains("ytbt-player-panel-open"), false);
+});
+
 test("style edits persist and immediately update the subtitle overlay", async (t) => {
     const f = fixture(t);
     f.$(".ytbt-player-button").click();
@@ -92,6 +111,23 @@ test("style edits persist and immediately update the subtitle overlay", async (t
     await f.win.handlePlayerControlAction("reset-style");
     assert.equal(f.stored.fontScale, 1);
     assert.equal(f.stored.subtitleColor, "#ffffff");
+});
+
+test("fullscreen caption positions and dragging use the video width outside the dock", async (t) => {
+    const f = fixture(t);
+    const player = f.$("#movie_player");
+    Object.defineProperty(f.win.document, "fullscreenElement", {value: player});
+    player.getBoundingClientRect = () => ({left: 0, top: 0, right: 1024, bottom: 800, width: 1024, height: 800});
+    f.win.state.overlay.getBoundingClientRect = () => ({width: 200, height: 40});
+    await f.win.handlePlayerControlAction("transcript");
+    f.win.applyOverlayPosition();
+    assert.match(f.win.state.overlay.style.left, /392px/);
+    f.win.state.overlayDrag.offsetX = 0;
+    f.win.state.overlayDrag.offsetY = 0;
+    f.win.moveOverlayToPointer(1000, 400);
+    assert.equal(f.win.state.settings.subtitlePosition.xPct, (632 - 100 - 12) / 632 * 100);
+    await f.win.handlePlayerControlAction("close-panel");
+    assert.equal(f.win.state.overlay.style.left.includes("392px"), false);
 });
 
 test("transcript searches both languages, seeks, highlights, and does not call AI", async (t) => {

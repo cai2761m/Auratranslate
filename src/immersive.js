@@ -25,7 +25,8 @@
                 if (changes[key]) state.preferences[key] = changes[key].newValue ?? Core.DEFAULT_SETTINGS[key];
             }
             if (changes.immersiveDisplayMode) App.applyDisplayMode();
-            if (changes.immersiveAutoTranslate || changes.immersiveSiteRules) App.maybeAutoTranslate();
+            if (changes.immersiveDisabledSites) App.syncControlVisibility();
+            if (changes.immersiveAutoTranslate || changes.immersiveSiteRules || changes.immersiveDisabledSites) App.maybeAutoTranslate();
         });
         document.addEventListener("visibilitychange", () => {
             App.syncPageIdentity();

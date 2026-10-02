@@ -33,6 +33,7 @@
         immersiveDisplayMode: "bilingual",
         immersiveAutoTranslate: false,
         immersiveSiteRules: {},
+        immersiveDisabledSites: [],
         targetLanguage: "zh-CN",
         sourceLanguage: "en",
         fontScale: 1,
@@ -70,6 +71,20 @@
     }
 
     const UI_THEMES = ["system", "light", "dark"];
+
+    function normalizeSiteHostname(value) {
+        const text = String(value || "").trim();
+        if (!text || /\s|\*/.test(text)) return "";
+        try {
+            const url = new URL(text.includes("://") ? text : `https://${text}`);
+            return ["http:", "https:"].includes(url.protocol) && url.hostname
+                ? url.hostname.toLowerCase().replace(/\.$/, "") : "";
+        } catch (_) { return ""; }
+    }
+
+    function normalizeDisabledSites(values) {
+        return [...new Set((Array.isArray(values) ? values : []).map(normalizeSiteHostname).filter(Boolean))];
+    }
 
     function normalizeUiTheme(value) {
         return UI_THEMES.includes(value) ? value : DEFAULT_SETTINGS.uiTheme;
@@ -488,6 +503,8 @@
     }
 
     Object.assign(Shared, {
+        normalizeSiteHostname,
+        normalizeDisabledSites,
         DEFAULT_SETTINGS,
         DEEPSEEK_MODEL,
         FONT_SCALE_MIN,

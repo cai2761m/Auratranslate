@@ -13,6 +13,8 @@
         ball: null,
         ballText: null,
         panel: null,
+        dismissMenu: null,
+        controlDismissed: false,
         panelTimer: null,
         panelStatusText: "",
         panelStatusPersistent: false,
@@ -52,7 +54,11 @@
     }
 
     function storageSet(values) {
-        return new Promise((resolve) => chrome.storage.local.set(values, resolve));
+        return new Promise((resolve, reject) => chrome.storage.local.set(values, () => {
+            const error = chrome.runtime.lastError;
+            if (error) reject(new Error(error.message));
+            else resolve();
+        }));
     }
 
     function clamp(value, min, max) {

@@ -12,7 +12,7 @@ const PAGES = [
     ["translation-services", "翻译服务", "供应方与模型目录"],
     ["realtime-api", "实时字幕", "视频双语字幕"],
     ["immersive-api", "沉浸式翻译", "网页翻译"],
-    ["general-settings", "通用设置", "语言、字幕与缓存"],
+    ["general-settings", "通用设置", "外观与缓存"],
 ];
 const currentPage = () =>
     PAGES.find(([id]) => id === location.hash.replace(/^#\/?/, ""))?.[0] ||
@@ -117,7 +117,6 @@ export function OptionsApp() {
                     <span className="header-divider"/>
                     <h1>设置</h1>
                 </div>
-                <span className="save-note">更改自动保存</span>
             </header>
             <div className="settings-layout">
                 <aside className="settings-sidebar" inert={modal || picking}>

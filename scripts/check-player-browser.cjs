@@ -17,16 +17,17 @@ async function main() {
     try {
         await page.route("https://www.youtube.com/**", (route) => route.fulfill({contentType: "text/html", body: `<!doctype html><html><head><meta charset="utf-8"><style>
           body {margin: 0; background: #f1f1f1; font-family: Arial, sans-serif;}
+          ytd-watch-flexy {display: block;}
           main {max-width: 1040px; margin: 64px auto;}
           #movie_player {position: relative; width: 100%; aspect-ratio: 16/9; background: #232326; overflow: hidden; color: white;}
           video {position: absolute; width: 100%; height: 100%;}
           .ytp-chrome-bottom {position: absolute; bottom: 0; left: 12px; right: 12px; height: 48px; border-top: 3px solid #d03035;}
           .ytp-right-controls {float: right; height: 48px; display: flex;}
-          .ytp-button {height: 48px; width: 44px; border: 0; color: white; background: none; font-size: 18px; cursor: pointer;}
+          .ytp-button {height: 48px; width: 44px; line-height: 90px; border: 0; color: white; background: none; font-size: 18px; cursor: pointer;}
           .video-heading {position: absolute; top: 20px; left: 24px; font-size: 20px;}
           #movie_player:fullscreen {width: 100vw; height: 100vh; aspect-ratio: auto;}
           @media (max-width: 600px) {main {margin: 24px auto;}}
-        </style></head><body><main><div id="movie_player" class="html5-video-player"><video></video><div class="video-heading">Sample video</div><div class="ytp-chrome-bottom"><span>00:10 / 12:00</span><div class="ytp-right-controls"><button class="ytp-button" aria-label="Settings">⚙</button><button class="ytp-button" id="fullscreen" aria-label="Fullscreen">⛶</button></div></div></div></main></body></html>`}));
+        </style></head><body><ytd-watch-flexy><main><div id="movie_player" class="html5-video-player"><video></video><div class="video-heading">Sample video</div><div class="ytp-chrome-bottom"><span>00:10 / 12:00</span><div class="ytp-right-controls"><button class="ytp-button" aria-label="Settings">⚙</button><button class="ytp-button" id="fullscreen" aria-label="Fullscreen">⛶</button></div></div></div></main></ytd-watch-flexy></body></html>`}));
         await page.goto("https://www.youtube.com/watch?v=preview");
         const logo = fs.readFileSync(path.join(root, "icons/icon-32.png")).toString("base64");
         await page.evaluate((logo) => {
@@ -72,8 +73,23 @@ async function main() {
             setInterval(updateOverlay, 250);
         });
         const button = page.locator(".ytbt-player-button");
+        const aligned = await button.evaluate((el) => {
+            const button = el.getBoundingClientRect(), image = el.querySelector("img").getBoundingClientRect();
+            return Math.abs(button.x + button.width / 2 - image.x - image.width / 2) < 1 &&
+                Math.abs(button.y + button.height / 2 - image.y - image.height / 2) < 1;
+        });
+        assert.equal(aligned, true, "logo ignores the native toolbar text baseline");
         await button.click();
+        assert.equal(await page.locator(".ytbt-player-menu header, .ytbt-player-menu [data-action='close-menu']").count(), 0);
+        assert.equal(await page.locator(".ytbt-player-ui").getAttribute("data-theme"), "light");
         await page.screenshot({path: path.join(screenshots, "player-menu.png")});
+        await page.evaluate(() => {
+            document.documentElement.setAttribute("dark", "");
+            document.body.style.background = "#0f0f0f";
+        });
+        await page.waitForFunction(() => document.querySelector(".ytbt-player-ui").dataset.theme === "dark");
+        assert.equal(await page.locator(".ytbt-player-menu").evaluate((el) => getComputedStyle(el).backgroundColor), "rgb(32, 32, 34)");
+        await page.screenshot({path: path.join(screenshots, "player-menu-dark.png")});
         await page.locator('[data-setting="subtitleEnabled"]').uncheck();
         await page.waitForFunction(() => window.stored.subtitleEnabled === false && state.overlay.hidden);
         await page.locator('[data-setting="subtitleEnabled"]').check();
@@ -92,9 +108,10 @@ async function main() {
         await page.locator(".ytbt-cue-row").click();
         assert.equal(await page.evaluate(() => state.video.currentTime), 20);
         await page.locator(".ytbt-transcript-search").fill("");
+        await assertContained(page);
         await page.screenshot({path: path.join(screenshots, "player-transcript.png")});
         const before = await page.locator(".ytbt-tools-panel").boundingBox();
-        await page.mouse.move(before.x + 50, before.y + 16);
+        await page.mouse.move(before.x + 50, before.y + 2);
         await page.mouse.down();
         await page.mouse.move(before.x - 120, before.y + 55, {steps: 8});
         await page.mouse.up();
@@ -111,6 +128,11 @@ async function main() {
         await button.click();
         await page.locator('.ytbt-menu-main [data-action="transcript"]').click();
         await assertContained(page);
+        const alignedCaptions = await page.locator(".ytbt-overlay").evaluate((el) => {
+            const r = el.getBoundingClientRect(), v = document.querySelector("video").getBoundingClientRect();
+            return Math.abs(r.x + r.width / 2 - v.x - v.width / 2) < 1 && r.right <= v.right;
+        });
+        assert.equal(alignedCaptions, true, "fullscreen subtitles stay centered within the video, outside the dock");
         await page.screenshot({path: path.join(screenshots, "player-fullscreen.png")});
         await page.evaluate(() => document.exitFullscreen());
         await page.waitForFunction(() => !document.fullscreenElement);
@@ -137,14 +159,20 @@ async function main() {
 async function assertContained(page) {
     const bounds = await page.evaluate(() => {
         const p = document.querySelector("#movie_player").getBoundingClientRect();
+        const v = document.querySelector("video").getBoundingClientRect();
         const panel = document.querySelector(".ytbt-tools-panel");
         const r = panel.getBoundingClientRect();
-        return {inside: r.left >= p.left && r.top >= p.top && r.right <= p.right + 1 && r.bottom <= p.bottom + 1,
+        const external = window.innerWidth < 760 && !document.fullscreenElement ? r.top >= p.bottom :
+            r.left >= (document.fullscreenElement ? v.right : p.right);
+        return {external, horizontalFit: r.left >= 0 && r.right <= window.innerWidth,
+            viewportFit: window.innerWidth < 760 && !document.fullscreenElement || r.top >= 0 && r.bottom <= window.innerHeight + 1,
             overflow: panel.scrollWidth > panel.clientWidth + 1, listHeight: document.querySelector(".ytbt-cue-list").clientHeight};
     });
-    assert.equal(bounds.inside, true, JSON.stringify(bounds));
+    assert.equal(bounds.external, true, JSON.stringify(bounds));
+    assert.equal(bounds.horizontalFit, true, JSON.stringify(bounds));
+    assert.equal(bounds.viewportFit, true, JSON.stringify(bounds));
     assert.equal(bounds.overflow, false, JSON.stringify(bounds));
-    assert.ok(bounds.listHeight >= 40, `transcript needs readable scroll space: ${JSON.stringify(bounds)}`);
+    assert.ok(bounds.listHeight >= 180, `transcript needs readable scroll space: ${JSON.stringify(bounds)}`);
 }
 
 main().catch((error) => { console.error(error); process.exitCode = 1; });

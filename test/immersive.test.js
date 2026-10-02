@@ -848,7 +848,7 @@ test("formatting copies no active source attributes and keeps code-like HTML ine
 
 // The floating control must never push translation progress on screen on its
 // own; hovering it (or the open panel) is the only thing that reveals it.
-function createControlFixture(t, html) {
+function createControlFixture(t, html, stored = {}) {
   const dom = new JSDOM(html, { url: "https://docs.flutter.dev/install/quick", runScripts: "outside-only", pretendToBeVisual: true });
   t.after(() => dom.window.close());
   const { window } = dom;
@@ -864,9 +864,18 @@ function createControlFixture(t, html) {
     const style = getComputedStyle(element);
     return { display: style.display, visibility: style.visibility, opacity: style.opacity || "1", getPropertyValue: style.getPropertyValue.bind(style) };
   };
+  const listeners = [];
   window.chrome = {
     runtime: {},
-    storage: { local: { get: (defaults, callback) => callback(defaults), set: (_, callback) => callback() } }
+    storage: {local: {
+      get: (defaults, callback) => callback({...defaults, ...stored}),
+      set(values, callback) {
+        Object.assign(stored, values);
+        callback();
+        const changes = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, {newValue: value}]));
+        listeners.forEach((fn) => fn(changes, "local"));
+      }
+    }, onChanged: {addListener(listener) { listeners.push(listener); }}}
   };
   window.eval(sharedScript);
   window.YTBTCore = {
@@ -878,8 +887,54 @@ function createControlFixture(t, html) {
     }
   };
   window.eval(immersiveScript);
-  return { window, document: window.document, requests, pending };
+  return { window, document: window.document, requests, pending, stored };
 }
+
+test("session dismissal does not persist or translate and a fresh page restores the ball", async (t) => {
+  const f = createControlFixture(t, `<main>${paragraphs(8)}</main>`);
+  await f.window.YTBTImmersive.state.preferencesReady;
+  f.document.querySelector(".ytbt-immersive-dismiss").click();
+  assert.equal(f.document.querySelector(".ytbt-immersive-dismiss-menu").hidden, false);
+  f.document.querySelector('[data-dismiss="session"]').click();
+  assert.equal(f.document.querySelector(".ytbt-immersive-tab").hidden, true);
+  assert.equal(f.stored.immersiveDisabledSites, undefined);
+  assert.equal(f.requests.length, 0);
+  const fresh = createControlFixture(t, "<main></main>", f.stored);
+  await fresh.window.YTBTImmersive.state.preferencesReady;
+  assert.equal(fresh.document.querySelector(".ytbt-immersive-tab").hidden, false);
+});
+
+test("site dismissal survives reload, suppresses automatic work and follows settings deletion", async (t) => {
+  const f = createControlFixture(t, `<main>${paragraphs(8)}</main>`);
+  await f.window.YTBTImmersive.state.preferencesReady;
+  f.document.querySelector(".ytbt-immersive-dismiss").click();
+  f.document.querySelector('[data-dismiss="site"]').click();
+  await waitUntil(() => f.document.querySelector(".ytbt-immersive-tab").hidden);
+  assert.deepEqual(Array.from(f.stored.immersiveDisabledSites), ["docs.flutter.dev"]);
+  const fresh = createControlFixture(t, `<main>${paragraphs(8)}</main>`, {...f.stored, immersiveAutoTranslate: true});
+  await fresh.window.YTBTImmersive.state.preferencesReady;
+  assert.equal(fresh.document.querySelector(".ytbt-immersive-tab").hidden, true);
+  assert.equal(fresh.requests.length, 0);
+  await fresh.window.YTBTImmersive.storageSet({immersiveAutoTranslate: false, immersiveDisabledSites: []});
+  assert.equal(fresh.document.querySelector(".ytbt-immersive-tab").hidden, false);
+});
+
+test("failed site dismissal leaves the control visible with a readable error", async (t) => {
+  const f = createControlFixture(t, "<main></main>");
+  await f.window.YTBTImmersive.state.preferencesReady;
+  f.window.chrome.storage.local.set = (values, done) => {
+    f.window.chrome.runtime.lastError = {message: "quota"};
+    done();
+    delete f.window.chrome.runtime.lastError;
+  };
+  f.document.querySelector(".ytbt-immersive-dismiss").click();
+  f.document.querySelector('[data-dismiss="site"]').click();
+  const error = f.document.querySelector(".ytbt-immersive-dismiss-menu p");
+  await waitUntil(() => !error.hidden);
+  assert.match(error.textContent, /保存失败/);
+  assert.equal(f.document.querySelector(".ytbt-immersive-tab").hidden, false);
+  assert.equal(f.stored.immersiveDisabledSites, undefined);
+});
 
 test("translation progress stays hidden until the pointer is on the floating control", async (t) => {
   const { window, document, pending } = createControlFixture(t, `<main>${paragraphs(8)}</main>`);

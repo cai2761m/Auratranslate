@@ -22,8 +22,8 @@
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
     padding: 0;
     margin: 0;
     background: radial-gradient(ellipse at 0% 100%, var(--ytbt-aurora-wash-green), transparent 68%),
@@ -50,6 +50,51 @@
     transform: translate(-2px, -50%);
     box-shadow: -4px 3px 16px rgba(58, 196, 173, 0.16), 4px -2px 16px rgba(146, 110, 225, 0.16), 0 9px 24px var(--ytbt-ball-shadow), inset 0 1px 0 var(--ytbt-ball-sheen);
 }
+
+.ytbt-immersive-tab[hidden], .ytbt-immersive-dismiss-menu[hidden] { display: none !important; }
+.ytbt-immersive-dismiss {
+    all: initial;
+    position: absolute;
+    left: -5px;
+    bottom: -5px;
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--ytbt-ball-border);
+    border-radius: 50%;
+    background: var(--ytbt-ball-background);
+    color: var(--ytbt-ball-foreground);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+}
+.ytbt-immersive-dismiss svg { width: 12px; height: 12px; pointer-events: none; }
+.ytbt-immersive-tab:is(:hover, :focus-within, [data-ytbt-dismiss-open="true"]) .ytbt-immersive-dismiss { opacity: 1; pointer-events: auto; }
+.ytbt-immersive-dismiss:focus-visible { outline: 2px solid var(--ytbt-ball-ring); outline-offset: 2px; }
+.ytbt-immersive-dismiss-menu {
+    position: fixed;
+    right: 12px;
+    z-index: 2147483646;
+    box-sizing: border-box;
+    width: 240px;
+    max-width: calc(100vw - 24px);
+    padding: 5px;
+    background: #292735;
+    color: #ffffff;
+    border: 1px solid #ffffff29;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px #0003;
+    font: 13px/1.5 "Segoe UI", "Microsoft YaHei UI", sans-serif;
+    letter-spacing: 0;
+}
+.ytbt-immersive-dismiss-menu[data-ytbt-theme="light"] { background: #ffffff; color: #292735; border-color: #dedbe5; }
+.ytbt-immersive-dismiss-menu button { all: unset; display: block; box-sizing: border-box; width: 100%; padding: 9px 10px; border-radius: 4px; cursor: pointer; font: inherit; letter-spacing: 0; }
+.ytbt-immersive-dismiss-menu button:hover { background: #88888826; }
+.ytbt-immersive-dismiss-menu button:focus-visible { outline: 2px solid #a898e7; outline-offset: -2px; }
+.ytbt-immersive-dismiss-menu p { margin: 4px 10px; font: inherit; color: #d45b6c; }
+@media (hover: none) { .ytbt-immersive-dismiss { opacity: 1; pointer-events: auto; } }
 
 /* A quiet aurora curtain drifts only while the control is in use. */
 .ytbt-immersive-tab::before {
@@ -108,7 +153,7 @@
     transition: opacity 160ms ease, transform 160ms ease, visibility 160ms;
 }
 
-.ytbt-immersive-tab:not([data-ytbt-has-status="true"]):not(.ytbt-immersive-dragging):is(:hover, :focus-within)::after {
+.ytbt-immersive-tab:not([data-ytbt-has-status="true"]):not([data-ytbt-dismiss-open="true"]):not(.ytbt-immersive-dragging):is(:hover, :focus-within)::after {
     opacity: 1;
     visibility: visible;
     transform: translate(0, -50%);
@@ -136,8 +181,8 @@
 }
 
 .ytbt-immersive-ball svg {
-    width: 28px;
-    height: 28px;
+    width: 24px;
+    height: 24px;
     display: block;
     fill: none;
     stroke: currentColor;
@@ -218,6 +263,8 @@
     z-index: 2147483645;
     box-sizing: border-box;
     max-width: min(320px, calc(100vw - 36px));
+    max-height: calc(100vh - 72px);
+    overflow: auto;
     padding: 10px 14px;
     border: 1px solid #e8e7ee;
     border-radius: 14px;

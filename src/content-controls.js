@@ -50,7 +50,6 @@ function createPlayerControls() {
     root.setAttribute("translate", "no");
     root.innerHTML = `
       <section id="ytbt-player-menu" class="ytbt-player-menu" role="dialog" aria-label="AuraTranslate" hidden>
-        <header class="ytbt-tools-heading"><strong>AuraTranslate</strong><button type="button" class="ytbt-icon-button" data-action="close-menu" title="关闭菜单" aria-label="关闭菜单">${playerControlIcon("close")}</button></header>
         <div class="ytbt-menu-main">
           <label class="ytbt-menu-row">${playerControlIcon("subtitles")}<span>视频字幕</span><input type="checkbox" role="switch" data-setting="subtitleEnabled" aria-label="视频字幕"><span class="ytbt-switch" aria-hidden="true"></span></label>
           <button type="button" class="ytbt-menu-row" data-action="style">${playerControlIcon("settings")}<span>字幕样式</span><span aria-hidden="true">›</span></button>
@@ -68,8 +67,7 @@ function createPlayerControls() {
         <p class="ytbt-tools-error" role="status" hidden></p>
       </section>
       <section class="ytbt-tools-panel" role="dialog" aria-label="AuraTranslate 字幕与总结" hidden>
-        <header class="ytbt-tools-heading ytbt-panel-handle"><strong>AuraTranslate</strong><button type="button" class="ytbt-icon-button" data-action="close-panel" title="关闭面板" aria-label="关闭面板">${playerControlIcon("close")}</button></header>
-        <div class="ytbt-panel-tabs"><button type="button" data-action="transcript" aria-pressed="true">字幕列表</button><button type="button" data-action="summary" aria-pressed="false">AI 总结</button></div>
+        <div class="ytbt-panel-tabs ytbt-panel-handle"><button type="button" data-action="transcript" aria-pressed="true">字幕列表</button><button type="button" data-action="summary" aria-pressed="false">AI 总结</button><button type="button" class="ytbt-icon-button" data-action="close-panel" title="关闭面板" aria-label="关闭面板">${playerControlIcon("close")}</button></div>
         <div class="ytbt-transcript-view">
           <div class="ytbt-list-toolbar"><input type="search" class="ytbt-transcript-search" placeholder="搜索字幕" aria-label="搜索字幕"><label><input type="checkbox" class="ytbt-follow" checked>跟随播放</label></div>
           <div class="ytbt-cue-list" tabindex="0" aria-label="视频字幕列表"></div>
@@ -92,8 +90,9 @@ function createPlayerControls() {
         playerControls.menu.hidden = !open;
         button.setAttribute("aria-expanded", String(open));
         if (open) {
-            playerControls.panel.hidden = true;
+            closePlayerPanel();
             showPlayerStyle(false);
+            positionPlayerTools();
             playerControls.menu.querySelector("[data-setting]").focus();
         }
     });
@@ -107,7 +106,7 @@ function createPlayerControls() {
         if (event.key === "Escape") {
             event.preventDefault();
             if (!root.querySelector(".ytbt-menu-style").hidden && !playerControls.menu.hidden) showPlayerStyle(false);
-            else { closePlayerMenu(); playerControls.panel.hidden = true; button.focus(); }
+            else { closePlayerMenu(); closePlayerPanel(); button.focus(); }
         }
     });
     root.addEventListener("click", (event) => {
@@ -176,6 +175,14 @@ function closePlayerMenu() {
     playerControls.button.setAttribute("aria-expanded", "false");
 }
 
+function closePlayerPanel() {
+    if (!playerControls) return;
+    playerControls.panel.hidden = true;
+    document.documentElement.classList.remove("ytbt-player-panel-open");
+    applyOverlayPosition();
+    window.dispatchEvent(new Event("resize"));
+}
+
 function showPlayerStyle(show) {
     playerControls.root.querySelector(".ytbt-menu-main").hidden = show;
     playerControls.root.querySelector(".ytbt-menu-style").hidden = !show;
@@ -193,12 +200,15 @@ async function handlePlayerControlAction(action) {
     if (action === "style") showPlayerStyle(true);
     else if (action === "back") showPlayerStyle(false);
     else if (action === "close-menu") { closePlayerMenu(); ui.button.focus(); }
-    else if (action === "close-panel") { ui.panel.hidden = true; ui.button.focus(); }
+    else if (action === "close-panel") { closePlayerPanel(); ui.button.focus(); }
     else if (action === "reset-style") await savePlayerSettings({fontScale: 1, subtitleColor: "#ffffff", subtitleBackgroundOpacity: 0.88, subtitleDisplayMode: "bilingual"});
     else if (action === "reset-position") await savePlayerSettings({subtitlePosition: null});
     else if (action === "transcript" || action === "summary") {
         closePlayerMenu();
         ui.panel.hidden = false;
+        document.documentElement.classList.add("ytbt-player-panel-open");
+        window.dispatchEvent(new Event("resize"));
+        positionPlayerTools();
         ui.view = action;
         ui.root.querySelector(".ytbt-transcript-view").hidden = action !== "transcript";
         ui.root.querySelector(".ytbt-summary-view").hidden = action !== "summary";
@@ -221,12 +231,13 @@ async function handlePlayerControlAction(action) {
 function updatePlayerControls() {
     const player = findVideoPlayer();
     if (!player) {
-        if (playerControls) { playerControls.root.remove(); playerControls.button.remove(); }
+        if (playerControls) { closePlayerPanel(); closePlayerMenu(); playerControls.root.remove(); playerControls.button.remove(); }
         return;
     }
     const controls = player.querySelector(".ytp-right-controls");
     if (!controls) {
-        if (playerControls && playerControls.root.parentElement !== player) {
+        if (playerControls && !playerControls.button.isConnected) {
+            closePlayerPanel();
             playerControls.root.remove();
             playerControls.button.remove();
         }
@@ -234,7 +245,10 @@ function updatePlayerControls() {
     }
     const ui = playerControls || createPlayerControls();
     if (ui.button.parentElement !== controls) controls.insertBefore(ui.button, controls.firstChild);
-    if (ui.root.parentElement !== player) { player.appendChild(ui.root); ui.panel.style.removeProperty("left"); ui.panel.style.removeProperty("top"); }
+    const host = document.fullscreenElement || document.body;
+    if (host && ui.root.parentElement !== host) { host.appendChild(ui.root); ui.panel.style.removeProperty("left"); ui.panel.style.removeProperty("top"); }
+    syncPlayerToolsTheme();
+    positionPlayerTools();
     const videoId = getUrlVideoId() || state.videoId;
     const config = Core.resolveTranslationConfig(state.settings);
     const key = JSON.stringify([videoId, state.settings.sourceLanguage, state.settings.targetLanguage,
@@ -408,9 +422,48 @@ function renderPlayerSummary() {
 function clampPlayerPanel() {
     const panel = playerControls.panel;
     if (!panel.style.left) return;
-    const player = playerControls.root.parentElement;
-    panel.style.left = `${Math.max(8, Math.min(parseFloat(panel.style.left), player.clientWidth - panel.offsetWidth - 8))}px`;
-    panel.style.top = `${Math.max(8, Math.min(parseFloat(panel.style.top), player.clientHeight - panel.offsetHeight - 56))}px`;
+    panel.style.left = `${Math.max(8, Math.min(parseFloat(panel.style.left), window.innerWidth - panel.offsetWidth - 8))}px`;
+    panel.style.top = `${Math.max(8, Math.min(parseFloat(panel.style.top), window.innerHeight - panel.offsetHeight - 8))}px`;
+}
+
+function syncPlayerToolsTheme() {
+    const html = document.documentElement;
+    const page = document.querySelector("ytd-app") || document.body;
+    let dark = html.hasAttribute("dark");
+    if (!dark) {
+        let background;
+        for (let element = page; element; element = element.parentElement) {
+            const channels = getComputedStyle(element).backgroundColor.match(/[\d.]+/g)?.map(Number);
+            if (channels && channels.length >= 3 && (channels.length < 4 || channels[3] >= 0.5)) { background = channels; break; }
+        }
+        dark = background ? background[0] * 0.2126 + background[1] * 0.7152 + background[2] * 0.0722 < 128
+            : getComputedStyle(html).colorScheme === "dark" || window.matchMedia?.("(prefers-color-scheme: dark)").matches;
+    }
+    playerControls.root.dataset.theme = dark ? "dark" : "light";
+}
+
+function positionPlayerTools() {
+    const ui = playerControls;
+    const player = findVideoPlayer();
+    if (!ui || !player) return;
+    const rect = player.getBoundingClientRect();
+    const control = ui.button.getBoundingClientRect();
+    ui.menu.style.right = `${Math.max(8, window.innerWidth - Math.min(rect.right - 8, control.right + 16))}px`;
+    ui.menu.style.bottom = `${Math.max(8, window.innerHeight - control.top + 8)}px`;
+    ui.menu.style.maxHeight = `${Math.max(80, control.top - 16)}px`;
+    const fullscreen = Boolean(document.fullscreenElement);
+    ui.root.dataset.fullscreen = String(fullscreen);
+    const docked = fullscreen && !ui.panel.hidden && window.innerWidth >= 760;
+    if (ui.docked !== docked) { ui.docked = docked; applyOverlayPosition(); }
+    if (!ui.panel.style.left) {
+        if (window.innerWidth < 760 && !fullscreen) {
+            ui.panel.style.top = `${Math.max(8, rect.bottom + window.scrollY + 12)}px`;
+            ui.panel.style.height = `${Math.max(480, window.innerHeight - rect.bottom - 28)}px`;
+        } else {
+            ui.panel.style.top = `${fullscreen ? 12 : Math.max(12, Math.min(rect.top, 80))}px`;
+            ui.panel.style.height = `${Math.max(160, window.innerHeight - parseFloat(ui.panel.style.top) - 16)}px`;
+        }
+    }
 }
 
 function bindPlayerPanelDrag() {
@@ -418,7 +471,7 @@ function bindPlayerPanelDrag() {
     const handle = panel.querySelector(".ytbt-panel-handle");
     let drag = null;
     handle.addEventListener("pointerdown", (event) => {
-        if (event.button !== 0 || event.target.closest("button")) return;
+        if (event.button !== 0 || event.target.closest("button") || window.innerWidth < 760) return;
         const rect = panel.getBoundingClientRect();
         drag = {x: event.clientX - rect.left, y: event.clientY - rect.top};
         handle.setPointerCapture(event.pointerId);
@@ -426,9 +479,8 @@ function bindPlayerPanelDrag() {
     });
     handle.addEventListener("pointermove", (event) => {
         if (!drag) return;
-        const playerRect = playerControls.root.parentElement.getBoundingClientRect();
-        panel.style.left = `${event.clientX - playerRect.left - drag.x}px`;
-        panel.style.top = `${event.clientY - playerRect.top - drag.y}px`;
+        panel.style.left = `${event.clientX - drag.x}px`;
+        panel.style.top = `${event.clientY - drag.y}px`;
         clampPlayerPanel();
     });
     for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) handle.addEventListener(type, () => { drag = null; });

@@ -329,6 +329,8 @@ function moveOverlayToPointer(clientX, clientY) {
     }
 
     const playerRect = player.getBoundingClientRect();
+    const dockWidth = subtitlePanelDockWidth();
+    const playerWidth = playerRect.width - dockWidth;
     const overlayRect = state.overlay.getBoundingClientRect();
     if (!playerRect.width || !playerRect.height || !overlayRect.width || !overlayRect.height) {
         return;
@@ -337,14 +339,14 @@ function moveOverlayToPointer(clientX, clientY) {
     const centerX = clientX - state.overlayDrag.offsetX + overlayRect.width / 2;
     const centerY = clientY - state.overlayDrag.offsetY + overlayRect.height / 2;
     const minX = playerRect.left + overlayRect.width / 2 + DRAG_EDGE_PADDING_PX;
-    const maxX = playerRect.right - overlayRect.width / 2 - DRAG_EDGE_PADDING_PX;
+    const maxX = playerRect.right - dockWidth - overlayRect.width / 2 - DRAG_EDGE_PADDING_PX;
     const minY = playerRect.top + overlayRect.height / 2 + DRAG_EDGE_PADDING_PX;
     const maxY = playerRect.bottom - overlayRect.height / 2 - DRAG_EDGE_PADDING_PX;
     const clampedX = clamp(centerX, Math.min(minX, maxX), Math.max(minX, maxX));
     const clampedY = clamp(centerY, Math.min(minY, maxY), Math.max(minY, maxY));
 
     state.settings.subtitlePosition = {
-        xPct: ((clampedX - playerRect.left) / playerRect.width) * 100,
+        xPct: ((clampedX - playerRect.left) / playerWidth) * 100,
         yPct: ((clampedY - playerRect.top) / playerRect.height) * 100
     };
     applyOverlayPosition();
@@ -394,14 +396,21 @@ function cancelOverlayDrag() {
     drag.active = false;
 }
 
+function subtitlePanelDockWidth() {
+    return document.fullscreenElement && window.innerWidth >= 760 &&
+        document.documentElement.classList.contains("ytbt-player-panel-open") ? 392 : 0;
+}
+
 function applyOverlayPosition() {
     if (!state.overlay) {
         return;
     }
 
     const position = normalizeSubtitlePosition(state.settings.subtitlePosition);
+    const dockWidth = subtitlePanelDockWidth();
+    const xPct = position ? position.xPct : 50;
+    state.overlay.style.left = dockWidth ? `calc((100% - ${dockWidth}px) * ${xPct / 100})` : `${xPct}%`;
     if (!position) {
-        state.overlay.style.left = "50%";
         state.overlay.style.top = "";
         // Let the mobile/fullscreen CSS choose the default control-bar offset.
         state.overlay.style.bottom = "";
@@ -409,7 +418,6 @@ function applyOverlayPosition() {
         return;
     }
 
-    state.overlay.style.left = `${position.xPct}%`;
     state.overlay.style.top = `${position.yPct}%`;
     state.overlay.style.bottom = "auto";
     state.overlay.style.transform = "translate(-50%, -50%)";

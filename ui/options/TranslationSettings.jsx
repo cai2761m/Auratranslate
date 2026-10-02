@@ -1,4 +1,6 @@
 import {Core, modelLabel} from "../shared/settings";
+import {SubtitlePreferences} from "./SubtitlePreferences";
+import {DisabledSites} from "./DisabledSites";
 
 export function TranslationSettings({
                                         settings,
@@ -130,6 +132,7 @@ export function TranslationSettings({
                 />
                 <span>JSON 输出模式<small>让模型返回结构化结果，服务不兼容时可关闭。</small></span>
             </label>
+            {immersive ? <DisabledSites settings={settings} update={update}/> : <SubtitlePreferences settings={settings} update={update}/>}
         </section>
     );
 }

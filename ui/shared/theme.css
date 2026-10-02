@@ -1,62 +1,268 @@
 :root {
-  color-scheme: light dark;
-  font-family: "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
-  font-size: 14px;
-  color: #292735;
-  background: #f6f6f9;
-  --canvas: #f6f6f9;
-  --surface: #ffffff;
-  --subtle: #f9f9fc;
-  --ink: #292735;
-  --muted: #737080;
-  --border: #e8e7ee;
-  --input-border: #dcdbe5;
-  --accent: #7056ce;
-  --accent-hover: #5f46bc;
-  --accent-text: #664abd;
-  --soft: #f0ebfc;
-  --focus: #b3a0ea;
-  --success: #26775d;
-  --danger: #bf4359;
-  --danger-soft: #fff1f3;
-  --shadow: 0 4px 24px #24203705;
+    /* Native form controls and scrollbars follow the resolved theme, not the OS
+       setting, so an explicit light/dark choice also picks the right widgets. */
+    color-scheme: light;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", Roboto, system-ui, sans-serif;
+    font-size: 14px;
+    color: #0a1628;
+    background: #f5f7fa;
+
+    /* Core colors - Cool slate palette */
+    --canvas: #f5f7fa;
+    --surface: #ffffff;
+    --surface-glass: rgba(255, 255, 255, 0.92);
+    --subtle: #eef1f6;
+    --ink: #0a1628;
+    --muted: #5c6b7e;
+    --border: #dce2ea;
+    --input-border: #c5d0e0;
+
+    /* Accent - Teal/Cyan spectrum.
+       --accent is a COLOR: border-color, accent-color and box-shadow cannot
+       take a gradient, so a gradient here silently voids those declarations.
+       Use --accent-gradient wherever a background may be painted. */
+    --accent: #0891b2;
+    --accent-gradient: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+    --accent-solid: #0891b2;
+    --accent-hover: #0e7490;
+    --accent-light: #06b6d4;
+    --accent-text: #0e7490;
+    --soft: #ecfeff;
+    --soft-hover: #cffafe;
+
+    /* Aurora identity.
+       The floating control was the only part that already read as "Aurora": a
+       ribbon over a dark glass ball, using #70e7c5 / #82cafa / #b19afa -- a
+       three-hue rainbow shared by no other surface. These tokens pull that
+       ribbon to two stops so one brand colour runs through the extension pages
+       and the in-page control.
+       Gradient stops are deliberately DEEP. White text sits on the ribbon, and
+       the brighter teals the interface uses for accents and focus rings fail
+       4.5:1 against white (#0891b2 measures 3.68:1). Both stops here pass:
+       #0e7490 5.36:1 and #1a5fb4 6.29:1, with dE 40 -- legible as a gradient
+       without smearing into a rainbow across a wide button. */
+    --aurora-1: #0e7490;
+    --aurora-2: #1a5fb4;
+    --aurora-gradient: linear-gradient(135deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
+    --aurora-gradient-soft: linear-gradient(135deg, rgba(14, 116, 144, 0.10) 0%, rgba(26, 95, 180, 0.10) 100%);
+    --aurora-ring: rgba(14, 116, 144, 0.5);
+    --aurora-shadow: 0 2px 10px rgba(14, 116, 144, 0.24), 0 1px 3px rgba(26, 95, 180, 0.2);
+
+    /* Focus & interaction */
+    --focus: #22d3ee;
+    --focus-ring: 0 0 0 3px rgba(8, 145, 178, 0.15);
+
+    /* Status colors. These label small text (save notices, errors, model
+       latency), so each holds 4.5:1 on white AND on its own -soft fill. The
+       previous #059669 / #dc2626 / #d97706 measured 3.77, 3.95 and 2.86 there. */
+    --success: #047857;
+    --success-soft: #d1fae5;
+    --danger: #b91c1c;
+    --danger-soft: #fee2e2;
+    --warning: #b45309;
+    --warning-soft: #fef3c7;
+
+    /* Shadows - crisp & defined */
+    --shadow-sm: 0 1px 2px rgba(10, 22, 40, 0.06), 0 1px 3px rgba(10, 22, 40, 0.04);
+    --shadow: 0 2px 8px rgba(10, 22, 40, 0.08), 0 4px 12px rgba(10, 22, 40, 0.04);
+    --shadow-md: 0 4px 16px rgba(10, 22, 40, 0.1), 0 8px 24px rgba(10, 22, 40, 0.06);
+    --shadow-lg: 0 8px 32px rgba(10, 22, 40, 0.12), 0 16px 48px rgba(10, 22, 40, 0.08);
+
+    /* Minimal accent highlights - no glow */
+    --glow-accent: 0 2px 12px rgba(8, 145, 178, 0.12);
 }
-* { box-sizing: border-box; }
-body { margin: 0; }
-button, input, select { font: inherit; }
-button, input, select { -webkit-tap-highlight-color: transparent; }
-button { cursor: pointer; }
-button, select, input { transition: border-color .15s, background-color .15s, box-shadow .15s; }
-button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
-button:disabled, input:disabled, select:disabled { cursor: default; opacity: .55; }
-button, input, select { color: inherit; }
-[hidden] { display: none !important; }
-.ui-icon { width: 20px; height: 20px; flex-shrink: 0; vertical-align: middle; }
-.brand { display: flex; align-items: center; gap: 11px; }
-.brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--accent); color: #fff; }
-.brand-mark .ui-icon { width: 23px; height: 23px; }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --canvas: #19191f;
-    --surface: #222229;
-    --subtle: #282830;
-    --ink: #eeedf4;
-    --muted: #a4a1b1;
-    --border: #36353f;
-    --input-border: #45434f;
-    --accent: #8060d0;
-    --accent-hover: #7957c8;
-    --accent-text: #bea6fb;
-    --soft: #363046;
-    --focus: #8f78c8;
-    --success: #80cfad;
-    --danger: #f29eac;
-    --danger-soft: #402a33;
-    --shadow: 0 4px 24px #00000012;
+
+* {
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    margin: 0;
+}
+
+button, input, select {
+    font: inherit;
+}
+
+button, input, select {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button {
+    cursor: pointer;
+}
+
+button, select, input {
+    transition: border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* The ring is drawn with box-shadow, which forced-colors (Windows high
+   contrast) mode removes. A transparent outline costs nothing normally and is
+   repainted in the system highlight colour there, so focus stays visible. */
+button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: var(--focus-ring);
+}
+
+button:disabled, input:disabled, select:disabled {
+    cursor: default;
+    opacity: .5;
+}
+
+button, input, select {
+    color: inherit;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+.ui-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    vertical-align: middle;
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-mark {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    /* Steeper than the shared ribbon: across 40px a 135deg sweep reads as a
+       flat fill, so the brand mark leans the stops toward the corners where
+       they can actually be seen. */
+    background: linear-gradient(150deg, var(--aurora-1) 0%, var(--aurora-2) 78%);
+    color: #fff;
+    box-shadow: var(--aurora-shadow);
+    position: relative;
+    overflow: hidden;
+}
+
+/* The sheen made the flat fill look grubby; on the ribbon it reads as a light
+   source. Kept because it now has something to sit on. */
+.brand-mark::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.28) 0%, transparent 55%);
+    pointer-events: none;
+}
+
+.brand-mark .ui-icon {
+    width: 24px;
+    height: 24px;
+}
+
+/* Theme scope.
+   <html data-theme> always holds the RESOLVED theme, "light" or "dark".
+   ui/shared/theme-boot.js sets it before first paint and turns the "system"
+   preference into one of the two (and follows OS changes while it is
+   selected), so the dark palette needs exactly one selector and no
+   prefers-color-scheme duplicate that could drift from it. */
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --canvas: #0a1117;
+    --surface: #0f1620;
+    --surface-glass: rgba(15, 22, 32, 0.92);
+    --subtle: #151d28;
+    --ink: #e8eef5;
+    --muted: #8a98ab;
+    --border: #1e2835;
+    --input-border: #2a3744;
+
+    /* Dark mode accent - vibrant cyan */
+    --accent: #06b6d4;
+    --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    --accent-solid: #06b6d4;
+    --accent-hover: #22d3ee;
+    --accent-light: #67e8f9;
+    --accent-text: #22d3ee;
+    --soft: #0d2331;
+    --soft-hover: #123042;
+
+    /* Aurora ribbon on the dark canvas. Slightly lifted from the light set
+       (#0e7490 -> #1a5fb4 measures 5.36:1 and 6.29:1 here too), because a
+       deep ribbon on a near-black surface loses its edge entirely. */
+    --aurora-1: #0e7490;
+    --aurora-2: #2563c9;
+    --aurora-gradient: linear-gradient(135deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
+    --aurora-gradient-soft: linear-gradient(135deg, rgba(34, 211, 238, 0.14) 0%, rgba(96, 130, 240, 0.14) 100%);
+    --aurora-ring: rgba(34, 211, 238, 0.6);
+    --aurora-shadow: 0 2px 12px rgba(34, 211, 238, 0.16), 0 1px 4px rgba(96, 130, 240, 0.2);
+
+    --focus: #22d3ee;
+    --focus-ring: 0 0 0 3px rgba(6, 182, 212, 0.2);
+
+    --success: #10b981;
+    --success-soft: #0d2d23;
+    --danger: #f87171;
+    --danger-soft: #2d1618;
+    --warning: #fbbf24;
+    --warning-soft: #2d2518;
+
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.25);
+    --shadow: 0 2px 12px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 28px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6), 0 16px 56px rgba(0, 0, 0, 0.4);
+
+    --glow-accent: 0 2px 16px rgba(6, 182, 212, 0.15);
+
     color: var(--ink);
     background: var(--canvas);
-  }
 }
+
+:root[data-theme="dark"] .brand-mark {
+    box-shadow: var(--shadow-md);
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--subtle);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 5px;
+    border: 2px solid var(--subtle);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--muted);
+}
+
+/* Selection styling */
+::selection {
+    background: rgba(8, 145, 178, 0.2);
+    color: var(--ink);
 }

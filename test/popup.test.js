@@ -137,6 +137,35 @@ test("failed saves roll back selected values and surface a recoverable error", a
   assert.equal($("#translation-service").disabled, false);
 });
 
+test("the appearance button cycles system, light and dark and persists each choice", async (t) => {
+  const { $, window, settings } = await popup(t);
+  const painted = [];
+  window.AuraTheme = { apply: (theme) => painted.push(theme) };
+  const toggle = $("#theme-toggle");
+  assert.equal(toggle.dataset.themePreference, "system");
+  assert.match(toggle.getAttribute("aria-label"), /跟随系统/);
+  for (const expected of ["light", "dark", "system"]) {
+    click(toggle);
+    await tick();
+    assert.equal(settings.uiTheme, expected);
+    assert.equal(toggle.dataset.themePreference, expected);
+  }
+  assert.deepEqual(painted, ["light", "dark", "system"]);
+  assert.match(toggle.getAttribute("aria-label"), /跟随系统/);
+});
+
+test("a failed appearance save repaints the previous theme", async (t) => {
+  const { $, window, settings } = await popup(t, { uiTheme: "dark" }, { saveError: true });
+  const painted = [];
+  window.AuraTheme = { apply: (theme) => painted.push(theme) };
+  click($("#theme-toggle"));
+  await tick();
+  assert.equal(settings.uiTheme, "dark");
+  assert.deepEqual(painted, ["system", "dark"], "repaint, then undo");
+  assert.equal($("#theme-toggle").dataset.themePreference, "dark");
+  assert.match($("#status").textContent, /保存失败/);
+});
+
 test("running translations disable duplicate starts and language changes but retain mode switching", async (t) => {
   const { $ } = await popup(
     t,

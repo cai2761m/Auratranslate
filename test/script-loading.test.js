@@ -16,7 +16,10 @@ test("every content script and extension page loads the complete shared API in o
   for (const page of ["options/options.html", "popup/popup.html"]) {
     const scripts = [...read(page).matchAll(/<script\s+src="([^"]+)"/g)]
       .map(match => path.posix.normalize(path.posix.join(path.posix.dirname(page), match[1])));
-    entries.push(scripts);
+    // theme-boot.js runs in <head> before first paint and depends on nothing,
+    // so it precedes the shared API rather than being part of it.
+    assert.equal(scripts[0], "ui/shared/theme-boot.js", `${page} boots its theme first`);
+    entries.push(scripts.slice(1));
   }
   for (const scripts of entries) {
     assert.deepEqual(scripts.slice(0, expected.length), expected);

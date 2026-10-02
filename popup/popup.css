@@ -1,76 +1,704 @@
 @import url("../ui/shared/theme.css");
 
-html, body { width: 380px; max-width: 100vw; min-width: 280px; }
-body { overflow-x: hidden; }
-.popup { padding: 22px 22px 12px; }
-.popup-header, .popup-footer, .text-button { display: flex; align-items: center; }
-.popup-header { justify-content: space-between; gap: 12px; margin-bottom: 22px; }
-h1 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: -.5px; }
-.brand-caption { margin: 4px 0 0; font-size: 11px; color: var(--muted); }
-.version { font-size: 10px; color: var(--muted); white-space: nowrap; }
-.current-page { display: flex; align-items: center; gap: 7px; margin: 0 0 20px; color: var(--muted); font-size: 11px; }
-.current-page .ui-icon { width: 14px; height: 14px; }
-.current-page > span:first-of-type { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.page-kind { margin-left: auto; white-space: nowrap; color: var(--accent-text); background: var(--soft); padding: 4px 7px; border-radius: 5px; }
-.language-pair { display: grid; grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr); align-items: center; padding: 16px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
-.select-field { display: block; min-width: 0; }
-.select-field > span, legend { display: block; margin-bottom: 8px; color: var(--muted); font-size: 11px; font-weight: 500; }
-.language-pair .select-field > span { padding-left: 8px; }
-select { width: 100%; height: 38px; border: 1px solid transparent; border-radius: 7px; background-color: var(--surface); padding: 0 8px; cursor: pointer; text-overflow: ellipsis; font-size: 13px; }
-select:hover { background-color: var(--subtle); border-color: var(--input-border); }
-.language-pair select { font-size: 15px; font-weight: 600; padding-left: 5px; }
-.direction { padding-top: 18px; color: var(--muted); text-align: center; }
-.direction .ui-icon { width: 16px; height: 16px; }
-.service-card { margin-top: 12px; padding: 4px 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
-.service-field { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 8px; padding: 8px 0; }
-.service-field + .service-field { border-top: 1px solid var(--border); }
-.service-field > span { margin: 0; }
-.service-field select { height: 34px; font-size: 12px; }
-.model-hint { grid-column: 1 / -1; display: block; font-size: 11px; line-height: 1.6; color: var(--muted); }
-.translate-actions { display: flex; gap: 9px; margin-top: 18px; }
-.mode-toggle { flex: 0 0 76px; display: flex; align-items: center; justify-content: center; gap: 6px; height: 46px; padding: 0 8px; background: var(--surface); border: 1px solid var(--input-border); border-radius: 11px; color: var(--accent-text); }
-.mode-toggle:hover { background: var(--soft); border-color: var(--focus); }
-#mode-icon { font-size: 12px; font-weight: 650; }
-.mode-label { color: var(--ink); font-size: 11px; }
-.primary { display: flex; flex: 1; min-width: 0; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 11px; background: var(--accent); color: #fff; font-size: 13px; font-weight: 600; box-shadow: 0 3px 8px #7056ce1a; }
-.primary:hover:not(:disabled) { background: var(--accent-hover); }
-.primary:active:not(:disabled) { transform: translateY(1px); }
-.primary .ui-icon { width: 18px; height: 18px; }
-.button-spinner { width: 16px; height: 16px; border: 2px solid #ffffff55; border-top-color: #fff; border-radius: 50%; animation: button-spin .8s linear infinite; }
-@keyframes button-spin { to { transform: rotate(360deg); } }
-.status { min-height: 18px; margin: 11px 1px 15px; color: var(--muted); font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
-.status[data-error="true"] { color: var(--danger); }
-.popup-footer { justify-content: space-between; border-top: 1px solid var(--border); padding-top: 7px; }
-.text-button { gap: 6px; border: 0; border-radius: 6px; padding: 9px 0; background: transparent; color: var(--muted); font-size: 11px; }
-.text-button:hover { color: var(--accent-text); }
-.text-button .ui-icon { width: 16px; height: 16px; }
-.chevron { transition: transform .15s; }
-[aria-expanded="true"] .chevron { transform: rotate(180deg); }
-.more-open .service-card, .more-open .translate-actions { display: none; }
-.more-open .current-page { display: none; }
-.more-open .status { margin-bottom: 8px; }
-.more-panel { margin-top: 8px; padding-top: 16px; border-top: 1px solid var(--border); }
-fieldset { padding: 0; margin: 0 0 18px; border: 0; min-width: 0; }
-legend { padding: 0; }
-.site-name { margin: -2px 0 10px; font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
-.segmented { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--border); border-radius: 10px; background: var(--subtle); }
-.segmented button { flex: 1; min-width: 0; border: 1px solid transparent; border-radius: 7px; padding: 8px 2px; background: transparent; color: var(--muted); font-size: 11px; white-space: nowrap; }
-.segmented button span { margin-left: 6px; }
-.segmented button:hover { color: var(--accent-text); }
-.segmented button[aria-pressed="true"] { background: var(--surface); color: var(--accent-text); border-color: var(--border); box-shadow: 0 1px 3px #00000008; }
-.popup-toggle { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 0; font-size: 12px; cursor: pointer; }
-.popup-toggle + .popup-toggle { border-top: 1px solid var(--border); }
-.popup-toggle small { display: block; margin-top: 4px; font-size: 10px; color: var(--muted); }
-.popup-toggle input { appearance: none; flex: 0 0 auto; position: relative; width: 32px; height: 20px; margin: 0; border: 0; border-radius: 20px; background: var(--input-border); cursor: pointer; }
-.popup-toggle input::before { content: ""; position: absolute; left: 3px; top: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px #00000015; transition: transform .15s; }
-.popup-toggle input:checked { background: var(--accent); }
-.popup-toggle input:checked::before { transform: translateX(12px); }
-@media (max-width: 360px) {
-  .popup { padding: 16px 14px 10px; }
-  .popup-header { gap: 8px; }
-  .brand { gap: 8px; }
-  h1 { font-size: 16px; }
-  .brand-mark { width: 32px; height: 32px; }
-  .language-pair { padding: 12px 8px; grid-template-columns: minmax(0, 1fr) 20px minmax(0, 1fr); }
-  .language-pair select { font-size: 13px; }
+html, body {
+    width: 400px;
+    max-width: 100vw;
+    min-width: 300px;
 }
+
+body {
+    overflow-x: hidden;
+    background: var(--canvas);
+}
+
+.popup {
+    padding: 24px 24px 16px;
+    animation: popup-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popup-enter {
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.popup-header, .popup-footer, .text-button {
+    display: flex;
+    align-items: center;
+}
+
+.popup-header {
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 24px;
+}
+
+h1 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--ink);
+    position: relative;
+}
+
+h1::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 30px;
+    height: 2px;
+    background: var(--aurora-gradient);
+    border-radius: 2px;
+}
+
+.brand-caption {
+    margin: 5px 0 0;
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.version {
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+    padding: 3px 8px;
+    background: var(--subtle);
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.current-page {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 16px;
+    padding: 10px 12px;
+    color: var(--muted);
+    font-size: 11px;
+    background: var(--subtle);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+}
+
+/* The one gradient rail in the popup: it marks the context strip, the only
+   element here that reports state instead of taking input. Vertical, because
+   a 135deg sweep has no room to show across 4px. */
+.current-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
+}
+
+.current-page .ui-icon {
+    width: 15px;
+    height: 15px;
+    color: var(--accent-text);
+}
+
+.current-page > span:first-of-type {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ink);
+    font-weight: 500;
+}
+
+.page-kind {
+    margin-left: auto;
+    white-space: nowrap;
+    color: var(--accent-text);
+    background: var(--soft);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 10px;
+    /* border-opacity is not a CSS property; the alpha belongs in the colour. */
+    border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+/* The single card holding every translation input. Rows inside it are
+   separated by hairlines, not by further cards. */
+.control-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.language-pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1fr);
+    align-items: center;
+    padding: 16px 16px 14px;
+}
+
+.select-field {
+    display: block;
+    min-width: 0;
+}
+
+.select-field > span, legend {
+    display: block;
+    margin-bottom: 9px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.language-pair .select-field > span {
+    padding-left: 6px;
+}
+
+select {
+    width: 100%;
+    height: 40px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background-color: var(--surface);
+    padding: 0 10px;
+    cursor: pointer;
+    text-overflow: ellipsis;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+select:hover {
+    background-color: var(--subtle);
+    border-color: var(--input-border);
+}
+
+select:focus {
+    background-color: var(--soft);
+    border-color: var(--accent-solid);
+}
+
+.language-pair select {
+    font-size: 15px;
+    font-weight: 600;
+    padding-left: 6px;
+    color: var(--ink);
+}
+
+.direction {
+    padding-top: 22px;
+    color: var(--accent-text);
+    text-align: center;
+}
+
+.direction .ui-icon {
+    width: 18px;
+    height: 18px;
+    opacity: 0.7;
+}
+
+/* Horizontal padding lives on the rows, so every hairline in the card runs
+   edge to edge instead of some being inset and some not. */
+.service-card {
+    padding: 2px 0 4px;
+    border-top: 1px solid var(--border);
+}
+
+.service-field {
+    display: grid;
+    grid-template-columns: 68px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+}
+
+.service-field + .service-field {
+    border-top: 1px solid var(--border);
+}
+
+.service-field > span {
+    margin: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.service-field select {
+    height: 36px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.model-hint {
+    grid-column: 1 / -1;
+    display: block;
+    font-size: 11px;
+    line-height: 1.65;
+    color: var(--muted);
+    padding: 8px 10px;
+    background: var(--soft);
+    border-radius: 8px;
+    margin-top: 6px;
+}
+
+.translate-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.mode-toggle {
+    flex: 0 0 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    height: 48px;
+    padding: 0 10px;
+    background: var(--surface);
+    border: 1px solid var(--input-border);
+    border-radius: 12px;
+    color: var(--accent-text);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mode-toggle::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--soft);
+    opacity: 0;
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mode-toggle:hover::before {
+    opacity: 1;
+}
+
+.mode-toggle:hover {
+    border-color: var(--accent-solid);
+    transform: translateY(-1px);
+}
+
+#mode-icon {
+    font-size: 13px;
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+}
+
+.mode-label {
+    color: var(--ink);
+    font-size: 11px;
+    font-weight: 600;
+    position: relative;
+    z-index: 1;
+}
+
+.primary {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    height: 48px;
+    border: 0;
+    border-radius: 12px;
+    /* The one place the Aurora ribbon is allowed to be a full surface. Horizontal
+       so the sweep tracks the button's own long axis. */
+    background: linear-gradient(100deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
+    background-size: 160% 160%;
+    background-position: 0% 50%;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: var(--aurora-shadow);
+    position: relative;
+    overflow: hidden;
+    transition: background-position 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.primary:hover:not(:disabled) {
+    /* Sliding the gradient reads as a shimmer without changing hue. */
+    background-position: 100% 50%;
+    box-shadow: 0 4px 18px rgba(34, 211, 238, 0.3), 0 2px 6px rgba(99, 102, 241, 0.24);
+    transform: translateY(-1px);
+}
+
+.primary:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: var(--shadow-sm);
+}
+
+.primary .ui-icon {
+    width: 19px;
+    height: 19px;
+    position: relative;
+    z-index: 1;
+}
+
+.button-spinner {
+    width: 17px;
+    height: 17px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: button-spin 0.7s linear infinite;
+    position: relative;
+    z-index: 1;
+}
+
+@keyframes button-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.status {
+    min-height: 20px;
+    margin: 13px 2px 18px;
+    color: var(--muted);
+    font-size: 11.5px;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+    font-weight: 500;
+}
+
+.status[data-error="true"] {
+    color: var(--danger);
+    padding: 10px 12px;
+    background: var(--danger-soft);
+    border-radius: 9px;
+    border: 1px solid var(--danger);
+    border-left-width: 3px;
+}
+
+.popup-footer {
+    gap: 6px;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+    margin-top: 4px;
+}
+
+/* The screen switch stays at the far edge; settings and appearance group left. */
+#more-toggle {
+    margin-left: auto;
+}
+
+.text-button.icon-only {
+    padding: 10px 8px;
+}
+
+.text-button {
+    gap: 7px;
+    border: 0;
+    border-radius: 8px;
+    padding: 10px 4px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    position: relative;
+}
+
+.text-button::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 8px;
+    background: var(--soft);
+    opacity: 0;
+    transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: -1;
+}
+
+.text-button:hover::before {
+    opacity: 1;
+}
+
+.text-button:hover {
+    color: var(--accent-text);
+}
+
+.text-button .ui-icon {
+    width: 17px;
+    height: 17px;
+}
+
+.text-button:disabled:hover {
+    color: var(--muted);
+}
+
+.text-button:disabled:hover::before {
+    opacity: 0;
+}
+
+.chevron {
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[aria-expanded="true"] .chevron {
+    transform: rotate(180deg);
+}
+
+/* "网站与偏好" is a second screen, not an expansion. It replaces the
+   translation screen outright, because the two together exceed Chrome's
+   600px action height limit (collapsed alone is already ~576px). */
+.more-open .translation-controls .control-card,
+.more-open .translate-actions,
+.more-open .current-page,
+.more-open .status {
+    display: none;
+}
+
+/* No top rule: the footer directly above already draws one, and two hairlines
+   a few pixels apart read as a rendering glitch. */
+.more-panel {
+    margin-top: 8px;
+    padding-top: 12px;
+    animation: more-panel-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes more-panel-in {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+fieldset {
+    padding: 0;
+    margin: 0 0 22px;
+    border: 0;
+    min-width: 0;
+}
+
+legend {
+    padding: 0;
+    color: var(--ink);
+    font-weight: 700;
+}
+
+.site-name {
+    margin: -2px 0 12px;
+    font-size: 11px;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+    padding: 8px 10px;
+    background: var(--subtle);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.segmented {
+    display: flex;
+    gap: 5px;
+    padding: 5px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--subtle);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.segmented button {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    padding: 10px 4px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 11px;
+    white-space: nowrap;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.segmented button span {
+    margin-left: 7px;
+}
+
+.segmented button:hover {
+    color: var(--accent-text);
+    background: var(--soft);
+}
+
+.segmented button[aria-pressed="true"] {
+    background: var(--surface);
+    color: var(--accent-text);
+    border-color: var(--border);
+    /* Was rgba(31, 25, 45, ...) -- a violet-tinted shadow left over from the
+       previous palette, which read as grubby against the teal accent. */
+    box-shadow: var(--shadow-sm);
+    font-weight: 700;
+    position: relative;
+}
+
+/* Selected state carries the brand colour as a rail rather than a fill, so a
+   row of three options does not become three competing blocks of colour. */
+.segmented button[aria-pressed="true"]::after {
+    content: '';
+    position: absolute;
+    left: 20%;
+    right: 20%;
+    bottom: 3px;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
+}
+
+.popup-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 16px;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+/* A row tint instead of fading the whole row: opacity also dimmed the switch,
+   so the control being hovered looked less available, not more. */
+.popup-toggle:hover {
+    background: var(--subtle);
+}
+
+.popup-toggle:first-child {
+    border-radius: 15px 15px 0 0;
+}
+
+.popup-toggle:last-child {
+    border-radius: 0 0 15px 15px;
+}
+
+.popup-toggle + .popup-toggle {
+    border-top: 1px solid var(--border);
+}
+
+.popup-toggle small {
+    display: block;
+    margin-top: 5px;
+    font-size: 10.5px;
+    color: var(--muted);
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.popup-toggle input {
+    appearance: none;
+    flex: 0 0 auto;
+    position: relative;
+    width: 38px;
+    height: 22px;
+    margin: 0;
+    border: 0;
+    border-radius: 22px;
+    background: var(--input-border);
+    cursor: pointer;
+    transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.popup-toggle input::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f8f8 100%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.1);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.popup-toggle input:checked {
+    background: linear-gradient(90deg, var(--aurora-1) 0%, var(--aurora-2) 100%);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.popup-toggle input:checked::before {
+    transform: translateX(16px);
+}
+
+@media (max-width: 360px) {
+    .popup {
+        padding: 20px 18px 14px;
+    }
+
+    .popup-header {
+        gap: 10px;
+    }
+
+    .brand {
+        gap: 10px;
+    }
+
+    h1 {
+        font-size: 17px;
+    }
+
+    .brand-mark {
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+    }
+
+    .brand-mark .ui-icon {
+        width: 22px;
+        height: 22px;
+    }
+
+    .language-pair {
+        padding: 14px 12px 12px;
+        grid-template-columns: minmax(0, 1fr) 26px minmax(0, 1fr);
+    }
+
+    .service-field {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .language-pair select {
+        font-size: 14px;
+    }
+
+    .direction .ui-icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .primary {
+        font-size: 13px;
+        gap: 7px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+    }
+}
+

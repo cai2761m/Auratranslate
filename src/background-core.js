@@ -19,25 +19,25 @@ const completedCueTranslations = new Map();
 let translationCacheWriteQueue = Promise.resolve();
 
 function storageGet(defaults) {
-  return new Promise((resolve, reject) => chrome.storage.local.get(defaults, (values) => {
-    const error = chrome.runtime.lastError;
-    if (error) reject(new Error(`Unable to read subtitle cache: ${error.message}`));
-    else resolve(values);
-  }));
+    return new Promise((resolve, reject) => chrome.storage.local.get(defaults, (values) => {
+        const error = chrome.runtime.lastError;
+        if (error) reject(new Error(`Unable to read subtitle cache: ${error.message}`));
+        else resolve(values);
+    }));
 }
 
 function storageSet(values) {
-  return new Promise((resolve, reject) => chrome.storage.local.set(values, () => {
-    const error = chrome.runtime.lastError;
-    if (error) reject(new Error(`Unable to save subtitle cache: ${error.message}`));
-    else resolve();
-  }));
+    return new Promise((resolve, reject) => chrome.storage.local.set(values, () => {
+        const error = chrome.runtime.lastError;
+        if (error) reject(new Error(`Unable to save subtitle cache: ${error.message}`));
+        else resolve();
+    }));
 }
 
 function storageRemove(keys) {
-  return new Promise((resolve, reject) => chrome.storage.local.remove(keys, () => {
-    const error = chrome.runtime.lastError;
-    if (error) reject(new Error(`Unable to remove subtitle cache: ${error.message}`));
-    else resolve();
-  }));
+    return new Promise((resolve, reject) => chrome.storage.local.remove(keys, () => {
+        const error = chrome.runtime.lastError;
+        if (error) reject(new Error(`Unable to remove subtitle cache: ${error.message}`));
+        else resolve();
+    }));
 }

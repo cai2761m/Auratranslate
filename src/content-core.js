@@ -16,8 +16,8 @@ var Core = globalThis.YTBTCore;
 var CHANNEL = "__ytbt_player_response__";
 var DRIVE_CHANNEL = "__ytbt_drive_transcript__";
 var IS_DRIVE_PLAYER =
-  window.location.hostname === "youtube.googleapis.com" &&
-  window.location.pathname.startsWith("/embed");
+    window.location.hostname === "youtube.googleapis.com" &&
+    window.location.pathname.startsWith("/embed");
 var BATCH_SIZE = 30;
 var GEMINI_BATCH_SIZE = 8;
 var CUSTOM_BATCH_SIZE = 15;
@@ -46,115 +46,115 @@ var TRANSCRIPT_PANEL_MAX_BODY_LENGTH = 20000000;
 var TRANSCRIPT_CLIENT_VERSION_FALLBACK = "2.20260729.00.00";
 var NATIVE_CAPTION_CAPTURE_TIMEOUT_MS = 7000;
 var NATIVE_CAPTION_SELECTOR = [
-  ".ytp-caption-window-container",
-  ".ytp-caption-window-rollup",
-  ".ytp-caption-window-bottom",
-  ".ytp-caption-window-top",
-  ".caption-window",
-  ".captions-text",
-  ".caption-visual-line",
-  ".ytp-caption-segment"
+    ".ytp-caption-window-container",
+    ".ytp-caption-window-rollup",
+    ".ytp-caption-window-bottom",
+    ".ytp-caption-window-top",
+    ".caption-window",
+    ".captions-text",
+    ".caption-visual-line",
+    ".ytp-caption-segment"
 ].join(",");
 
 var state = {
-  settings: Object.assign({}, Core.DEFAULT_SETTINGS),
-  lastPlayerResponse: null,
-  driveTranscriptPayload: null,
-  videoId: "",
-  track: null,
-  transcript: null,
-  trackFingerprint: "",
-  translationTrackFingerprint: "",
-  cues: [],
-  preparationPromise: null,
-  preparationBlocked: false,
-  queue: [],
-  inFlight: new Map(),
-  batchSerial: 0,
-  loadingToken: 0,
-  statusText: "",
-  overlay: null,
-  overlayParts: null,
-  lastDriveOverlayGeometryAt: 0,
-  lastDriveOverlayGeometrySignature: "",
-  overlayDrag: {
-    pointerId: null,
-    touchId: null,
-    captureTarget: null,
-    active: false,
-    offsetX: 0,
-    offsetY: 0,
-    lastClientX: 0,
-    lastClientY: 0
-  },
-  video: null,
-  nativeCaptionObserver: null,
-  lastNativeCaptionSweepAt: 0,
-  lastUrgentScheduleAt: 0,
-  apiBackoffUntil: 0,
-  apiBackoffMessage: "",
-  apiBackoffTimer: null,
-  bridgeInjected: false,
-  settingsLoaded: false,
-  pendingPlayerResponse: null,
-  captionLoadKey: "",
-  captionLoadPromise: null,
-  nativeCaptionWaiters: new Set(),
-  pumping: false
+    settings: Object.assign({}, Core.DEFAULT_SETTINGS),
+    lastPlayerResponse: null,
+    driveTranscriptPayload: null,
+    videoId: "",
+    track: null,
+    transcript: null,
+    trackFingerprint: "",
+    translationTrackFingerprint: "",
+    cues: [],
+    preparationPromise: null,
+    preparationBlocked: false,
+    queue: [],
+    inFlight: new Map(),
+    batchSerial: 0,
+    loadingToken: 0,
+    statusText: "",
+    overlay: null,
+    overlayParts: null,
+    lastDriveOverlayGeometryAt: 0,
+    lastDriveOverlayGeometrySignature: "",
+    overlayDrag: {
+        pointerId: null,
+        touchId: null,
+        captureTarget: null,
+        active: false,
+        offsetX: 0,
+        offsetY: 0,
+        lastClientX: 0,
+        lastClientY: 0
+    },
+    video: null,
+    nativeCaptionObserver: null,
+    lastNativeCaptionSweepAt: 0,
+    lastUrgentScheduleAt: 0,
+    apiBackoffUntil: 0,
+    apiBackoffMessage: "",
+    apiBackoffTimer: null,
+    bridgeInjected: false,
+    settingsLoaded: false,
+    pendingPlayerResponse: null,
+    captionLoadKey: "",
+    captionLoadPromise: null,
+    nativeCaptionWaiters: new Set(),
+    pumping: false
 };
 
 
 // --- chrome.storage promise wrappers ---
 function storageGet(defaults) {
-  return new Promise((resolve, reject) => chrome.storage.local.get(defaults, (values) => {
-    const error = chrome.runtime && chrome.runtime.lastError;
-    if (error) reject(new Error(`读取本地字幕缓存失败：${error.message}`));
-    else resolve(values);
-  }));
+    return new Promise((resolve, reject) => chrome.storage.local.get(defaults, (values) => {
+        const error = chrome.runtime && chrome.runtime.lastError;
+        if (error) reject(new Error(`读取本地字幕缓存失败：${error.message}`));
+        else resolve(values);
+    }));
 }
 
 function storageSet(values) {
-  return new Promise((resolve, reject) => chrome.storage.local.set(values, () => {
-    const error = chrome.runtime && chrome.runtime.lastError;
-    if (error) reject(new Error(`保存本地字幕缓存失败：${error.message}`));
-    else resolve();
-  }));
+    return new Promise((resolve, reject) => chrome.storage.local.set(values, () => {
+        const error = chrome.runtime && chrome.runtime.lastError;
+        if (error) reject(new Error(`保存本地字幕缓存失败：${error.message}`));
+        else resolve();
+    }));
 }
 
 function storageRemove(keys) {
-  return new Promise((resolve, reject) => chrome.storage.local.remove(keys, () => {
-    const error = chrome.runtime && chrome.runtime.lastError;
-    if (error) reject(new Error(`整理本地字幕缓存失败：${error.message}`));
-    else resolve();
-  }));
+    return new Promise((resolve, reject) => chrome.storage.local.remove(keys, () => {
+        const error = chrome.runtime && chrome.runtime.lastError;
+        if (error) reject(new Error(`整理本地字幕缓存失败：${error.message}`));
+        else resolve();
+    }));
 }
 
 
 // --- Shared status and error text helpers ---
 function formatCueFailureText(message) {
-  const detail = simplifyTranslationError(message);
-  return detail ? `翻译失败：${detail}` : "翻译失败";
+    const detail = simplifyTranslationError(message);
+    return detail ? `翻译失败：${detail}` : "翻译失败";
 }
 
 function simplifyTranslationError(message) {
-  const text = Core.normalizeSubtitleText(message || "");
-  if (!text) {
-    return "";
-  }
+    const text = Core.normalizeSubtitleText(message || "");
+    if (!text) {
+        return "";
+    }
 
-  return text
-    .replace(/^Error:\s*/i, "")
-    .replace(/^Gemini request failed \((\d+)\):\s*/i, "Gemini $1：")
-    .replace(/^DeepSeek request failed \((\d+)\):\s*/i, "DeepSeek $1：")
-    .replace(/^Custom API request failed \((\d+)\):\s*/i, "API $1：")
-    .slice(0, 90);
+    return text
+        .replace(/^Error:\s*/i, "")
+        .replace(/^Gemini request failed \((\d+)\):\s*/i, "Gemini $1：")
+        .replace(/^DeepSeek request failed \((\d+)\):\s*/i, "DeepSeek $1：")
+        .replace(/^Custom API request failed \((\d+)\):\s*/i, "API $1：")
+        .slice(0, 90);
 }
 
 function missingApiConfigText() {
-  const config = Core.resolveTranslationConfig(state.settings);
-  return `请在扩展选项页填写 ${config.providerLabel} API 配置`;
+    const config = Core.resolveTranslationConfig(state.settings);
+    return `请在扩展选项页填写 ${config.providerLabel} API 配置`;
 }
 
 function setStatus(text) {
-  state.statusText = text || "";
+    state.statusText = text || "";
 }

@@ -68,7 +68,10 @@ test("mobile popup and subtitle styles do not force desktop dimensions", () => {
   // The desktop width may change; the viewport cap must remain. Rendered
   // overflow and the 600px action height are checked by check-ui-browser.cjs.
   assert.match(popupCss, /max-width:\s*100vw/);
-  assert.match(popupCss, /min-width:\s*280px/);
+  // Assert the intent (a floor small enough for phones) rather than one exact
+  // value, so a deliberate width change does not fail as a false regression.
+  const minWidth = Number(popupCss.match(/min-width:\s*(\d+)px/)?.[1]);
+  assert.ok(minWidth > 0 && minWidth <= 320, `popup min-width ${minWidth}px is too large for phones`);
   assert.match(overlayCss, /@media\s*\(max-width:\s*600px\)/);
   assert.match(overlayCss, /safe-area-inset-bottom/);
 });

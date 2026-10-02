@@ -37,7 +37,16 @@ async function main() {
     });
     await page.emulateMedia({ colorScheme: "dark" });
     await page.screenshot({ path: path.join(screenshots, "options-dark.png"), fullPage: true, animations: "disabled" });
-    assert.equal(await page.locator(".panel").evaluate((el) => getComputedStyle(el).backgroundColor), "rgb(34, 34, 41)");
+    // Assert the intent -- dark mode actually darkens the surface -- instead of
+    // pinning one hex value, which made every palette tweak a false regression.
+    const darkSurface = await page
+      .locator(".panel")
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
+    const [r, g, b] = darkSurface.match(/\d+/g).map(Number);
+    assert.ok(
+      (r + g + b) / 3 < 64,
+      `dark mode should paint a dark panel surface, got ${darkSurface}`,
+    );
     await page.emulateMedia({ colorScheme: "light" });
     await page.locator("#add-service").click();
     assert.equal(
@@ -117,7 +126,12 @@ async function main() {
     await page.emulateMedia({ colorScheme: "light" });
     await page.locator("#more-toggle").click();
     await page.locator('[data-site-rule="always"]').click();
-    await page.locator("#status").filter({ hasText: "设置已保存" }).waitFor();
+    // The site-rule save is confirmed through #status, which the "more" screen
+    // hides alongside the translation controls. Wait on its text, not its
+    // visibility, so the persistence check still gates the screenshot.
+    await page.waitForFunction(
+      () => document.querySelector("#status")?.textContent.includes("设置已保存"),
+    );
     await page.locator("main").screenshot({ path: path.join(screenshots, "popup-more.png"), animations: "disabled" });
     for (const width of [320, 380]) {
       await page.setViewportSize({ width, height: 600 });

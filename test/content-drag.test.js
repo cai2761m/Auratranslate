@@ -157,8 +157,10 @@ function createDragHarness({ mobile = false } = {}) {
   });
 
   let source = contentScriptSource();
+  // Tolerate CRLF checkouts: the sources are not pinned to LF, and a
+  // Windows working tree would otherwise silently skip this replacement.
   source = source.replace(
-    /\ninit\(\);\n?$/,
+    /\r?\ninit\(\);\r?\n?$/,
     "\n// Initialization is omitted by this isolated interaction test.\n"
   );
   assert.match(source, /Initialization is omitted by this isolated interaction test/);

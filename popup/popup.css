@@ -381,15 +381,15 @@ select:focus {
 [aria-expanded="true"] .chevron {
   transform: rotate(180deg);
 }
+/* "网站与偏好" is a second screen, not an expansion. It replaces the
+   translation screen outright, because the two together exceed Chrome's
+   600px action height limit (collapsed alone is already ~576px). */
 .more-open .service-card,
-.more-open .translate-actions {
-  display: none;
-}
-.more-open .current-page {
-  display: none;
-}
+.more-open .translate-actions,
+.more-open .language-pair,
+.more-open .current-page,
 .more-open .status {
-  margin-bottom: 12px;
+  display: none;
 }
 .more-panel {
   margin-top: 12px;

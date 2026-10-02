@@ -15,8 +15,12 @@
   --border: #dce2ea;
   --input-border: #c5d0e0;
 
-  /* Accent - Teal/Cyan spectrum */
-  --accent: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
+  /* Accent - Teal/Cyan spectrum.
+     --accent is a COLOR: border-color, accent-color and box-shadow cannot
+     take a gradient, so a gradient here silently voids those declarations.
+     Use --accent-gradient wherever a background may be painted. */
+  --accent: #0891b2;
+  --accent-gradient: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);
   --accent-solid: #0891b2;
   --accent-hover: #0e7490;
   --accent-light: #06b6d4;
@@ -43,7 +47,6 @@
   --shadow-lg: 0 8px 32px rgba(10, 22, 40, 0.12), 0 16px 48px rgba(10, 22, 40, 0.08);
 
   /* Minimal accent highlights - no glow */
-  --glow-purple: 0 0 0 transparent;
   --glow-accent: 0 2px 12px rgba(8, 145, 178, 0.12);
 }
 * {
@@ -111,7 +114,8 @@ button, input, select { color: inherit; }
     --input-border: #2a3744;
 
     /* Dark mode accent - vibrant cyan */
-    --accent: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+    --accent: #06b6d4;
+    --accent-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
     --accent-solid: #06b6d4;
     --accent-hover: #22d3ee;
     --accent-light: #67e8f9;
@@ -134,7 +138,6 @@ button, input, select { color: inherit; }
     --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5), 0 8px 28px rgba(0, 0, 0, 0.35);
     --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.6), 0 16px 56px rgba(0, 0, 0, 0.4);
 
-    --glow-purple: 0 0 0 transparent;
     --glow-accent: 0 2px 16px rgba(6, 182, 212, 0.15);
 
     color: var(--ink);

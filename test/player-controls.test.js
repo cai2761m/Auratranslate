@@ -159,7 +159,7 @@ test("switching off AuraTranslate does not enable captions that YouTube turned o
     assert.equal(captions.hasAttribute("data-ytbt-native-caption-hidden"), false);
 });
 
-test("player menus follow page theme and panels mount outside the video", async (t) => {
+test("player menus follow page theme and floating panels do not trigger page layout changes", async (t) => {
     const f = fixture(t);
     assert.equal(f.$(".ytbt-player-ui").parentElement, f.win.document.body);
     assert.equal(f.$(".ytbt-player-menu header, .ytbt-player-menu [data-action='close-menu']"), null);
@@ -172,10 +172,15 @@ test("player menus follow page theme and panels mount outside the video", async 
     f.win.document.documentElement.setAttribute("dark", "");
     f.win.updatePlayerControls();
     assert.equal(f.$(".ytbt-player-ui").dataset.theme, "dark");
+    let resizeEvents = 0;
+    f.win.addEventListener("resize", () => resizeEvents++);
     await f.win.handlePlayerControlAction("transcript");
-    assert.equal(f.win.document.documentElement.classList.contains("ytbt-player-panel-open"), true);
-    await f.win.handlePlayerControlAction("close-panel");
+    assert.equal(f.$(".ytbt-tools-panel").hidden, false);
     assert.equal(f.win.document.documentElement.classList.contains("ytbt-player-panel-open"), false);
+    await f.win.handlePlayerControlAction("close-panel");
+    assert.equal(f.$(".ytbt-tools-panel").hidden, true);
+    assert.equal(f.win.document.documentElement.classList.contains("ytbt-player-panel-open"), false);
+    assert.equal(resizeEvents, 0);
 });
 
 test("style edits persist and immediately update the subtitle overlay", async (t) => {
@@ -197,7 +202,7 @@ test("style edits persist and immediately update the subtitle overlay", async (t
     assert.equal(f.stored.subtitleColor, "#ffffff");
 });
 
-test("fullscreen caption positions and dragging use the video width outside the dock", async (t) => {
+test("floating panels do not change fullscreen caption positions or drag boundaries", async (t) => {
     const f = fixture(t);
     const player = f.$("#movie_player");
     Object.defineProperty(f.win.document, "fullscreenElement", {value: player});
@@ -205,13 +210,14 @@ test("fullscreen caption positions and dragging use the video width outside the 
     f.win.state.overlay.getBoundingClientRect = () => ({width: 200, height: 40});
     await f.win.handlePlayerControlAction("transcript");
     f.win.applyOverlayPosition();
-    assert.match(f.win.state.overlay.style.left, /392px/);
+    assert.equal(f.win.state.overlay.style.left, "50%");
     f.win.state.overlayDrag.offsetX = 0;
     f.win.state.overlayDrag.offsetY = 0;
     f.win.moveOverlayToPointer(1000, 400);
-    assert.equal(f.win.state.settings.subtitlePosition.xPct, (632 - 100 - 12) / 632 * 100);
+    assert.equal(f.win.state.settings.subtitlePosition.xPct, (1024 - 100 - 12) / 1024 * 100);
+    const left = f.win.state.overlay.style.left;
     await f.win.handlePlayerControlAction("close-panel");
-    assert.equal(f.win.state.overlay.style.left.includes("392px"), false);
+    assert.equal(f.win.state.overlay.style.left, left);
 });
 
 test("transcript searches both languages, seeks, highlights, and does not call AI", async (t) => {

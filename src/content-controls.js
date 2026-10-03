@@ -178,9 +178,6 @@ function closePlayerMenu() {
 function closePlayerPanel() {
     if (!playerControls) return;
     playerControls.panel.hidden = true;
-    document.documentElement.classList.remove("ytbt-player-panel-open");
-    applyOverlayPosition();
-    window.dispatchEvent(new Event("resize"));
 }
 
 function showPlayerStyle(show) {
@@ -206,8 +203,6 @@ async function handlePlayerControlAction(action) {
     else if (action === "transcript" || action === "summary") {
         closePlayerMenu();
         ui.panel.hidden = false;
-        document.documentElement.classList.add("ytbt-player-panel-open");
-        window.dispatchEvent(new Event("resize"));
         positionPlayerTools();
         ui.view = action;
         ui.root.querySelector(".ytbt-transcript-view").hidden = action !== "transcript";
@@ -453,16 +448,9 @@ function positionPlayerTools() {
     ui.menu.style.maxHeight = `${Math.max(80, control.top - 16)}px`;
     const fullscreen = Boolean(document.fullscreenElement);
     ui.root.dataset.fullscreen = String(fullscreen);
-    const docked = fullscreen && !ui.panel.hidden && window.innerWidth >= 760;
-    if (ui.docked !== docked) { ui.docked = docked; applyOverlayPosition(); }
     if (!ui.panel.style.left) {
-        if (window.innerWidth < 760 && !fullscreen) {
-            ui.panel.style.top = `${Math.max(8, rect.bottom + window.scrollY + 12)}px`;
-            ui.panel.style.height = `${Math.max(480, window.innerHeight - rect.bottom - 28)}px`;
-        } else {
-            ui.panel.style.top = `${fullscreen ? 12 : Math.max(12, Math.min(rect.top, 80))}px`;
-            ui.panel.style.height = `${Math.max(160, window.innerHeight - parseFloat(ui.panel.style.top) - 16)}px`;
-        }
+        ui.panel.style.top = `${fullscreen ? 12 : Math.max(12, Math.min(rect.top, 80))}px`;
+        ui.panel.style.height = `${Math.max(160, window.innerHeight - parseFloat(ui.panel.style.top) - 16)}px`;
     }
 }
 

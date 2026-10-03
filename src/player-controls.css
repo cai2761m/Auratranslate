@@ -96,14 +96,3 @@
 .ytbt-player-ui[data-theme="dark"] :is(.ytbt-cue-row time, .ytbt-summary-status) { color: #b5a1ee; }
 .ytbt-player-ui[data-theme="dark"] .ytbt-cue-row[aria-current="true"] { background: #393045; }
 .ytbt-player-ui[data-theme="dark"] .ytbt-primary-button { background: #7252bd; }
-@media (min-width: 760px) {
-    html.ytbt-player-panel-open ytd-watch-flexy { width: calc(100% - 392px) !important; margin-right: 392px !important; min-width: 0 !important; --ytd-watch-flexy-min-player-width: 0px; }
-    html.ytbt-player-panel-open ytd-watch-flexy #primary { min-width: 0 !important; }
-    html.ytbt-player-panel-open .html5-video-player { max-width: 100%; }
-    html.ytbt-player-panel-open .html5-video-player:fullscreen video { width: calc(100% - 392px) !important; object-fit: contain; }
-    html.ytbt-player-panel-open .html5-video-player:fullscreen .ytbt-overlay { width: min(calc(100% - 424px), 1100px); }
-}
-@media (max-width: 759px) {
-    .ytbt-player-ui:not([data-fullscreen="true"]) { position: absolute; height: 100vh; }
-    .ytbt-player-ui:not([data-fullscreen="true"]) .ytbt-tools-panel { position: absolute; left: 8px; right: 8px; width: calc(100% - 16px); }
-}

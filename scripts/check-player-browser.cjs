@@ -138,8 +138,10 @@ async function main() {
         await page.screenshot({path: path.join(screenshots, "player-style.png")});
         await page.locator('[data-action="reset-style"]').click();
         await page.locator('[data-action="back"]').click();
+        const desktopLayout = await playerLayout(page);
         await page.locator('.ytbt-menu-main [data-action="transcript"]').click();
         await page.locator(".ytbt-cue-row").first().waitFor();
+        assert.deepEqual(await playerLayout(page), desktopLayout, "opening a floating list leaves the page and video unchanged");
         await page.locator(".ytbt-transcript-search").fill("第 2 节");
         assert.equal(await page.locator(".ytbt-cue-row").count(), 1);
         await page.locator(".ytbt-cue-row").click();
@@ -160,23 +162,30 @@ async function main() {
         await page.waitForFunction(() => playerControls.data.summary.length > 0);
         await page.screenshot({path: path.join(screenshots, "player-summary.png")});
         await page.locator('[data-action="close-panel"]').click();
+        assert.deepEqual(await playerLayout(page), desktopLayout, "closing the panel does not reflow the page");
         await page.locator("#fullscreen").click();
         await page.waitForFunction(() => document.fullscreenElement);
+        const fullscreenLayout = await playerLayout(page);
         await button.click();
         await page.locator('.ytbt-menu-main [data-action="transcript"]').click();
         await assertContained(page);
+        assert.deepEqual(await playerLayout(page), fullscreenLayout, "floating panels never shrink fullscreen video");
         const alignedCaptions = await page.locator(".ytbt-overlay").evaluate((el) => {
             const r = el.getBoundingClientRect(), v = document.querySelector("video").getBoundingClientRect();
             return Math.abs(r.x + r.width / 2 - v.x - v.width / 2) < 1 && r.right <= v.right;
         });
-        assert.equal(alignedCaptions, true, "fullscreen subtitles stay centered within the video, outside the dock");
+        assert.equal(alignedCaptions, true, "fullscreen subtitles stay centered within the full video");
         await page.screenshot({path: path.join(screenshots, "player-fullscreen.png")});
         await page.evaluate(() => document.exitFullscreen());
         await page.waitForFunction(() => !document.fullscreenElement);
         for (const viewport of [{width: 390, height: 844}, {width: 844, height: 390}]) {
             await page.setViewportSize(viewport);
             await page.waitForTimeout(300);
+            await page.locator('[data-action="close-panel"]').click();
+            const layout = await playerLayout(page);
+            await page.evaluate(() => handlePlayerControlAction("transcript"));
             await assertContained(page);
+            assert.deepEqual(await playerLayout(page), layout, "mobile panels do not add page space or resize video");
             await page.screenshot({path: path.join(screenshots, `player-${viewport.width}.png`)});
         }
         await page.setViewportSize({width: 1280, height: 850});
@@ -193,19 +202,26 @@ async function main() {
     } finally { await browser.close(); }
 }
 
+async function playerLayout(page) {
+    return page.evaluate(() => {
+        const bounds = (selector) => {
+            const r = document.querySelector(selector).getBoundingClientRect();
+            return {x: r.x, y: r.y, width: r.width, height: r.height};
+        };
+        return {watch: bounds("ytd-watch-flexy"), player: bounds("#movie_player"), video: bounds("video"),
+            scrollWidth: document.documentElement.scrollWidth, scrollHeight: document.documentElement.scrollHeight};
+    });
+}
+
 async function assertContained(page) {
     const bounds = await page.evaluate(() => {
-        const p = document.querySelector("#movie_player").getBoundingClientRect();
-        const v = document.querySelector("video").getBoundingClientRect();
         const panel = document.querySelector(".ytbt-tools-panel");
         const r = panel.getBoundingClientRect();
-        const external = window.innerWidth < 760 && !document.fullscreenElement ? r.top >= p.bottom :
-            r.left >= (document.fullscreenElement ? v.right : p.right);
-        return {external, horizontalFit: r.left >= 0 && r.right <= window.innerWidth,
-            viewportFit: window.innerWidth < 760 && !document.fullscreenElement || r.top >= 0 && r.bottom <= window.innerHeight + 1,
+        return {floating: getComputedStyle(panel).position === "fixed", horizontalFit: r.left >= 0 && r.right <= window.innerWidth,
+            viewportFit: r.top >= 0 && r.bottom <= window.innerHeight + 1,
             overflow: panel.scrollWidth > panel.clientWidth + 1, listHeight: document.querySelector(".ytbt-cue-list").clientHeight};
     });
-    assert.equal(bounds.external, true, JSON.stringify(bounds));
+    assert.equal(bounds.floating, true, JSON.stringify(bounds));
     assert.equal(bounds.horizontalFit, true, JSON.stringify(bounds));
     assert.equal(bounds.viewportFit, true, JSON.stringify(bounds));
     assert.equal(bounds.overflow, false, JSON.stringify(bounds));

@@ -1,0 +1,8 @@
+{
+  "id": "legacy-long",
+  "startMs": 29000,
+  "endMs": 41000,
+  "sourceText": "If you look at those job postings you know all the companies try to hire some AI engineers experts in machine learning they try to train their own models and to better predict something.",
+  "translatedText": "如果你看看那些招聘启事，就会发现所有公司都想招一些AI工程师和机器学习专家，他们试图训练自己的模型，以便更好地预测某些事情。",
+  "status": "translated"
+}

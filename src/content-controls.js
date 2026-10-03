@@ -316,7 +316,7 @@ function playerTimestamp(ms) {
 function renderPlayerTranscript() {
     const ui = playerControls;
     if (!ui || !ui.data || ui.panel.hidden || ui.view !== "transcript") return;
-    const cues = playerToolCues();
+    const cues = Core.getCaptionDisplayCues(playerToolCues());
     const list = ui.root.querySelector(".ytbt-cue-list");
     const current = Core.findCueAtTime(cues, getCurrentTimeMs());
     const follow = ui.root.querySelector(".ytbt-follow").checked;

@@ -254,7 +254,7 @@ async function prepareCaptionCues(rawCues, videoId, trackFingerprint, token, sou
         return;
     }
 
-    const merged = Core.mergeCaptionFragments(rawCues);
+    const merged = Core.splitLongCaptionCues(Core.mergeCaptionFragments(rawCues));
     if (!merged.length) {
         setStatus(`${sourceLabel || "字幕轨道"}没有可用的字幕内容。`);
         return;
@@ -337,7 +337,7 @@ function ensureCaptionPreparation() {
                 setStatus(`当前片段智能断句失败，使用本地断句：${simplifyTranslationError(error.message)}`);
             }
             if (!isCurrentCaptionLoad(videoId, trackFingerprint, token)) return;
-            prepared = prepared.map((cue, index) => ({...cue, id: `${windowId}:${index}`}));
+            prepared = Core.splitLongCaptionCues(prepared).map((cue, index) => ({...cue, id: `${windowId}:${index}`}));
             const nextCues = state.cues.filter((cue) => cue.pendingWindow !== windowId).concat(prepared)
                 .sort((a, b) => a.startMs - b.startMs);
             await persistPreparedCaptionCues(nextCues, videoId, trackFingerprint, token);

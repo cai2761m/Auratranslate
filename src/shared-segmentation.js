@@ -483,7 +483,140 @@
         return result;
     }
 
+    // Reading limits are measured in approximate display columns (CJK counts
+    // twice). Keep this separate from cue/cache identity: old translations can
+    // be paged locally without invalidating or resending paid work.
+    const CAPTION_SOURCE_COLUMNS = 120;
+    const CAPTION_TRANSLATION_COLUMNS = 96;
+    const displayPartCache = new WeakMap();
+    const displayTimelineCache = new WeakMap();
+
+    function captionCharacters(text) {
+        return Array.from(String(text || "").trim());
+    }
+
+    function captionCharacterWidth(character) {
+        return /[\u2e80-\ua4cf\uac00-\ud7ff\uf900-\ufaff\uff01-\uff60]|\p{Extended_Pictographic}/u.test(character) ? 2 : 1;
+    }
+
+    function captionTextWidth(text) {
+        return captionCharacters(text).reduce((sum, character) => sum + captionCharacterWidth(character), 0);
+    }
+
+    function captionPartCount(source, translation) {
+        const sourceWidth = captionTextWidth(source);
+        const translationWidth = captionTextWidth(translation);
+        if (sourceWidth <= CAPTION_SOURCE_COLUMNS && translationWidth <= CAPTION_TRANSLATION_COLUMNS) return 1;
+        // Leave room to move a cut to a word/clause boundary.
+        return Math.max(Math.ceil(sourceWidth / 100), Math.ceil(translationWidth / 80));
+    }
+
+    function splitCaptionText(text, count, maxColumns, fractions) {
+        const characters = captionCharacters(text);
+        const widths = [0];
+        for (const character of characters) widths.push(widths[widths.length - 1] + captionCharacterWidth(character));
+        const total = widths[characters.length];
+        const parts = [];
+        let start = 0;
+        for (let part = 0; part < count; part += 1) {
+            const remaining = count - part;
+            let end = characters.length;
+            if (remaining > 1 && start < end) {
+                const target = fractions ? total * fractions[part] : widths[start] + (total - widths[start]) / remaining;
+                let bestScore = Infinity;
+                end = start + 1;
+                for (let index = start + 1; index <= characters.length; index += 1) {
+                    const width = widths[index] - widths[start];
+                    if (width > maxColumns) break;
+                    if (total - widths[index] > maxColumns * (remaining - 1)) continue;
+                    if (characters.length - index < Math.min(remaining - 1, characters.length - start - 1)) continue;
+                    const left = characters[index - 1];
+                    const right = characters[index] || "";
+                    const punctuation = /[.!?。！？,，;；:：、]/.test(left);
+                    const wordBoundary = /\s/.test(right);
+                    const wideBoundary = captionCharacterWidth(left) === 2 || (right && captionCharacterWidth(right) === 2);
+                    // Prefer clauses, then whole words. Character cuts only
+                    // handle unspaced scripts or a single oversized token.
+                    let penalty = punctuation ? 0 : wordBoundary ? 12 : wideBoundary ? 18 : 100;
+                    if (/[，。！？；：、.!?,;:\])）”’]/.test(right)) penalty += 80;
+                    if (wordBoundary) {
+                        const tail = characters.slice(Math.max(start, index - 20), index).join("");
+                        if (DANGLING_END_WORDS.has(lastSubtitleWord(tail))) penalty += 15;
+                        const nextWord = firstSubtitleWord(characters.slice(index, index + 20).join(""));
+                        if (Shared.DISPLAY_PREPOSITION_WORDS.has(nextWord)) penalty += 18;
+                        if (["and", "but", "because", "when", "while", "they", "we", "you"].includes(nextWord)) penalty -= 26;
+                    }
+                    const score = Math.abs(widths[index] - target) + penalty;
+                    if (score < bestScore) { bestScore = score; end = index; }
+                }
+            }
+            parts.push({text: characters.slice(start, end).join("").trim(), fraction: total ? widths[end] / total : (part + 1) / count});
+            start = end;
+        }
+        return parts;
+    }
+
+    function timeCaptionParts(cue, sourceParts, translations) {
+        const duration = cue.endMs - cue.startMs;
+        let startMs = cue.startMs;
+        return sourceParts.map((part, index) => {
+            const endMs = index === sourceParts.length - 1 ? cue.endMs :
+                Math.max(startMs + 1, Math.min(cue.endMs - (sourceParts.length - index - 1),
+                    cue.startMs + Math.round(duration * part.fraction)));
+            const result = {...cue, id: `${cue.id}:display:${index}`, startMs, endMs,
+                sourceText: part.text, displaySourceText: part.text,
+                translatedText: translations ? translations[index].text : ""};
+            startMs = endMs;
+            return result;
+        });
+    }
+
+    function splitLongCaptionCues(cues) {
+        return (Array.isArray(cues) ? cues : []).flatMap((cue) => {
+            const count = Math.min(captionPartCount(cue.sourceText, ""), Math.max(1, Math.floor(cue.endMs - cue.startMs)));
+            if (count === 1) return [cue];
+            const parts = splitCaptionText(cue.sourceText, count, CAPTION_SOURCE_COLUMNS - 1);
+            return timeCaptionParts(cue, parts).map((part) => ({...part,
+                displaySourceText: Shared.formatDisplaySourceText(part.sourceText), status: "pending"}));
+        }).map((cue, index) => ({...cue, id: String(index)}));
+    }
+
+    function getCaptionDisplayParts(cue) {
+        const fields = [cue.sourceText, cue.displaySourceText, cue.translatedText, cue.startMs, cue.endMs, cue.status, cue.lastError];
+        const cached = displayPartCache.get(cue);
+        if (cached && fields.every((value, index) => value === cached.fields[index])) return cached.parts;
+        const source = cue.displaySourceText || cue.sourceText || "";
+        const translation = cue.translatedText || "";
+        const count = Math.min(captionPartCount(source, translation), Math.max(1, Math.floor(cue.endMs - cue.startMs)));
+        let parts = [cue];
+        if (count > 1) {
+            const sourceParts = splitCaptionText(source, count, CAPTION_SOURCE_COLUMNS);
+            if (sourceParts.some((part) => !part.text)) {
+                sourceParts.forEach((part, index) => { part.fraction = (index + 1) / count; });
+            }
+            // Legacy caches have no bilingual word alignment. Prefer nearby
+            // punctuation at matching proportions, estimating timing only
+            // within the original cue; never rewrite the stored translation.
+            const translations = splitCaptionText(translation, count, CAPTION_TRANSLATION_COLUMNS, sourceParts.map((part) => part.fraction));
+            parts = timeCaptionParts(cue, sourceParts, translations);
+        }
+        displayPartCache.set(cue, {fields, parts});
+        return parts;
+    }
+
+    function getCaptionDisplayCues(cues) {
+        const parts = cues.map(getCaptionDisplayParts);
+        const cached = displayTimelineCache.get(cues);
+        if (cached && cached.parts.length === parts.length && parts.every((value, index) => value === cached.parts[index])) return cached.cues;
+        const result = parts.flat();
+        displayTimelineCache.set(cues, {parts, cues: result});
+        return result;
+    }
+
     Object.assign(Shared, {
+        splitLongCaptionCues,
+        getCaptionDisplayParts,
+        getCaptionDisplayCues,
         mergeCaptionFragments,
         splitCaptionCuesAtSentenceBoundaries,
         parseSentenceSegmentationContent,

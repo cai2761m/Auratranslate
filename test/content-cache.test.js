@@ -685,6 +685,50 @@ test("legacy complete snapshots remain readable without repaying for segmentatio
   assert.deepEqual(viewCues(refreshed), viewCues(first));
 });
 
+test("oversized local and AI groups are shortened before translation and reused on refresh", async () => {
+  for (const llmSentenceSegmentationEnabled of [false, true]) {
+    const storage = sharedStorage();
+    const translations = new Map();
+    const settings = {llmSentenceSegmentationEnabled};
+    const page = loadContent(storage, translations, {settings, segmentationGroups: (cues) => [{startId: cues[0].id, endId: cues.at(-1).id}]});
+    const raw = {...require("./fixtures/long-caption.json"), translatedText: "", status: "pending"};
+    const payload = playerResponse("video-1", {}, [raw]);
+    const fingerprint = page.api.makeStableTrackFingerprint(payload.videoId, payload.captionTracks[0], null);
+    page.api.resetVideoState(payload.videoId, payload.captionTracks[0], fingerprint, null);
+    await page.api.prepareCaptionCues([raw], payload.videoId, fingerprint, page.api.state.loadingToken, "Test captions");
+    await settle(page);
+    assert.ok(page.api.state.cues.length > 1);
+    assert.ok(page.calls.paid.flatMap((call) => call.cues).every((cue) => cue.sourceText.length <= 120));
+    assert.equal(page.api.state.cues.map((cue) => cue.sourceText).join(" "), raw.sourceText);
+    const refreshed = loadContent(storage, translations, {settings});
+    await refreshed.api.handlePlayerResponse(payload);
+    await settle(refreshed);
+    assert.deepEqual(viewCues(refreshed), viewCues(page));
+    assert.equal(refreshed.calls.fetch.length, 0);
+    assert.equal(refreshed.calls.segmentation.length, 0);
+    assert.equal(refreshed.calls.paid.length, 0);
+  }
+});
+
+test("legacy long caption snapshots still hydrate and display locally without paid requests", async () => {
+  const storage = sharedStorage();
+  const translations = new Map();
+  const first = await seedPage(storage, translations, {cues: rawCues(1)});
+  const key = Object.keys(storage.data).find((key) => key.startsWith("ytbt:prepared:"));
+  const cue = {...require("./fixtures/long-caption.json")};
+  storage.data[key].cues = [cue];
+  const message = {videoId: "video-1", trackFingerprint: first.api.state.trackFingerprint};
+  translations.set(translationKey(message, cue, first.api.state.settings), {translatedText: cue.translatedText});
+  const refreshed = loadContent(storage, translations);
+  await refreshed.api.handlePlayerResponse(playerResponse());
+  await settle(refreshed);
+  assert.equal(refreshed.api.state.cues.length, 1, "stored translation identity must remain intact");
+  assert.ok(Core.getCaptionDisplayCues(refreshed.api.state.cues).length > 1);
+  assert.equal(refreshed.calls.fetch.length, 0);
+  assert.equal(refreshed.calls.segmentation.length, 0);
+  assert.equal(refreshed.calls.paid.length, 0);
+});
+
 test("window boundaries prefer complete sentences and retain every unpunctuated cue", () => {
   const page = loadContent(sharedStorage(), new Map());
   const input = Array.from({ length: 80 }, (_, index) => ({

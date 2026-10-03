@@ -236,6 +236,37 @@ test("transcript searches both languages, seeks, highlights, and does not call A
     assert.deepEqual(f.calls, []);
 });
 
+test("long cached captions share short parts across the list, seeking and overlay without AI calls", async (t) => {
+    const f = fixture(t);
+    const cue = {...require("./fixtures/long-caption.json")};
+    f.win.state.cues = [cue];
+    const original = JSON.stringify(cue);
+    await f.win.handlePlayerControlAction("transcript");
+    f.win.renderPlayerTranscript();
+    const parts = Core.getCaptionDisplayParts(cue);
+    assert.ok(parts.length > 1);
+    const rows = [...f.win.document.querySelectorAll(".ytbt-cue-row")];
+    assert.equal(rows.length, parts.length);
+    rows[1].click();
+    f.win.renderPlayerTranscript();
+    f.win.updateOverlay();
+    assert.equal(f.win.state.video.currentTime, parts[1].startMs / 1000);
+    assert.equal(rows[1].getAttribute("aria-current"), "true");
+    assert.equal(f.$(".ytbt-en").textContent, parts[1].displaySourceText);
+    assert.equal(f.$(".ytbt-cn").textContent, parts[1].translatedText);
+    const search = f.$(".ytbt-transcript-search");
+    search.value = "预测";
+    search.dispatchEvent(new f.win.Event("input", {bubbles: true}));
+    assert.equal(f.win.document.querySelectorAll(".ytbt-cue-row").length, 1);
+    assert.equal(JSON.stringify(cue), original);
+    assert.deepEqual(f.calls, []);
+    cue.translatedText = "好";
+    const unevenParts = Core.getCaptionDisplayParts(cue);
+    f.win.state.video.currentTime = unevenParts.at(-1).startMs / 1000;
+    f.win.updateOverlay();
+    assert.equal(f.$(".ytbt-cn").textContent, "", "an empty finished part must not claim translation is pending");
+});
+
 test("opening summary only checks cache; explicit generation is reused on reopen", async (t) => {
     const f = fixture(t);
     await f.win.handlePlayerControlAction("summary");

@@ -197,6 +197,42 @@ async function main() {
         });
         assert.equal(await page.locator(".ytbt-player-button").count(), 1);
         assert.equal(await page.locator('.ytbt-player-ui [data-ytbt-native-caption-hidden="true"]').count(), 0);
+        await page.evaluate(async (cue) => {
+            state.cues = [cue];
+            state.video.currentTime = cue.startMs / 1000;
+            await handlePlayerControlAction("transcript");
+            renderPlayerTranscript();
+            updateOverlay();
+        }, JSON.parse(read("test/fixtures/long-caption.json")));
+        const requestCount = await page.evaluate(() => messages.length);
+        assert.equal(await page.locator(".ytbt-cue-row").count(), 2);
+        await page.locator(".ytbt-cue-row").nth(1).click();
+        await page.waitForFunction(() => document.querySelector(".ytbt-en").textContent.startsWith("they try"));
+        const shortCaptionState = await page.evaluate(() => ({
+            rows: [...document.querySelectorAll(".ytbt-cue-row")].map((row) => ({
+                source: row.querySelector(".ytbt-cue-source").textContent,
+                translation: row.querySelector(".ytbt-cue-translation").textContent,
+                active: row.getAttribute("aria-current")
+            })),
+            source: document.querySelector(".ytbt-en").textContent,
+            translation: document.querySelector(".ytbt-cn").textContent,
+            cueCount: state.cues.length
+        }));
+        assert.equal(shortCaptionState.rows[1].active, "true");
+        assert.equal(shortCaptionState.source, shortCaptionState.rows[1].source);
+        assert.equal(shortCaptionState.translation, shortCaptionState.rows[1].translation);
+        assert.equal(shortCaptionState.cueCount, 1, "display splitting preserves the cached cue");
+        assert.ok(shortCaptionState.rows.every((row) => row.source.length <= 120 && row.translation.length <= 48));
+        await page.locator(".ytbt-tools-panel").screenshot({path: path.join(screenshots, "player-short-captions.png")});
+        await page.screenshot({path: path.join(screenshots, "player-short-captions-overlay.png")});
+        await page.locator(".ytbt-transcript-search").fill("预测");
+        assert.equal(await page.locator(".ytbt-cue-row").count(), 1);
+        await page.locator(".ytbt-transcript-search").fill("");
+        await page.setViewportSize({width: 390, height: 844});
+        await page.waitForTimeout(300);
+        await assertContained(page);
+        await page.locator(".ytbt-tools-panel").screenshot({path: path.join(screenshots, "player-short-captions-mobile.png")});
+        assert.equal(await page.evaluate(() => messages.length), requestCount, "viewing short captions never requests translation");
         assert.deepEqual(errors, []);
         console.log(`Player browser checks passed; screenshots: ${screenshots}`);
     } finally { await browser.close(); }

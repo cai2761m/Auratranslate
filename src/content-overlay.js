@@ -494,7 +494,8 @@ function updateOverlay() {
     }
 
     const timeMs = getCurrentTimeMs();
-    const cue = Core.findCueAtTime(state.cues, timeMs);
+    const originalCue = Core.findCueAtTime(state.cues, timeMs);
+    const cue = originalCue && Core.findCueAtTime(Core.getCaptionDisplayParts(originalCue), timeMs);
     const hasCue = Boolean(cue);
     const statusText = hasCue ? "" : state.statusText;
 
@@ -504,7 +505,7 @@ function updateOverlay() {
     overlay.classList.toggle("ytbt-loading", hasCue && cue.status !== "translated");
 
     if (hasCue) {
-        parts.cn.textContent = cue.translatedText || fallbackTextForCue(cue);
+        parts.cn.textContent = cue.translatedText || (cue.status === "translated" ? "" : fallbackTextForCue(cue));
         parts.en.textContent = cue.displaySourceText || cue.sourceText || "";
 
         if ((cue.status === "pending" || cue.status === "unprepared") && Date.now() - state.lastUrgentScheduleAt > URGENT_RESCHEDULE_MS) {

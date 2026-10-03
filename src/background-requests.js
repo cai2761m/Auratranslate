@@ -177,11 +177,13 @@ async function translateBatch({
         "Output strict valid JSON only, with no markdown and no extra fields. Escape all quotes and backslashes inside strings. Exact format: " +
         "{\"items\":[{\"id\":\"0\",\"translatedText\":\"...\"}]}.";
     const segmentationInstruction =
-        `You are a ${sourceLabel} subtitle sentence-boundary engine. Group adjacent input cues into natural, complete spoken sentences before translation. ` +
-        "An input cue may end in the middle of a sentence and the next cue may complete it; merge those cues into one group. " +
+        `You are a ${sourceLabel} subtitle sentence-boundary engine. Group adjacent input cues into short, natural spoken phrases before translation. ` +
+        "An input cue may end in the middle of a phrase and the next cue may complete it; join them within the reading limits below. " +
         "Never translate, summarize, reorder, invent, or delete words, and never split one input id across groups. " +
         "Every input id must be covered exactly once, in the original order, using consecutive startId/endId ranges. " +
-        "Prefer one complete sentence per group. When an input id already contains multiple sentences, keep them together. " +
+        "Prefer short, readable subtitle groups of about 100 characters and at most 8 seconds. " +
+        "Split long sentences at natural clause boundaries between input ids instead of making a paragraph. " +
+        "Only merge a partial sentence with the next cue when the result stays short. If one input id is already long, keep it alone. " +
         "In displaySourceText, concatenate the covered source text and only restore natural punctuation and capitalization. " +
         "Output strict valid JSON only, with no markdown. Exact format: " +
         "{\"groups\":[{\"startId\":\"0\",\"endId\":\"1\",\"displaySourceText\":\"Complete sentence.\"}]}.";

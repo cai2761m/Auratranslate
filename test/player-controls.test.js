@@ -75,6 +75,90 @@ test("player button survives replacement without duplicate menus and follows ext
     assert.equal(f.win.state.cues[0].translatedText, "你好世界");
 });
 
+test("turning off player subtitles restores native caption styles without toggling YouTube CC", async (t) => {
+    const f = fixture(t);
+    const captions = f.win.document.createElement("div");
+    captions.className = "ytp-caption-window-container";
+    captions.style.cssText = "display: block; visibility: visible; opacity: 0.8; pointer-events: auto";
+    captions.innerHTML = '<span class="captions-text" style="opacity: 0.6 !important">YouTube original captions</span>';
+    const cc = f.win.document.createElement("button");
+    cc.className = "ytp-subtitles-button";
+    cc.setAttribute("aria-pressed", "true");
+    let clicks = 0;
+    cc.onclick = () => clicks++;
+    f.$("#movie_player").append(captions, cc);
+    f.win.startNativeCaptionBlocker();
+    assert.equal(captions.style.display, "none");
+    const toggle = f.$('[data-setting="subtitleEnabled"]');
+    toggle.checked = false;
+    toggle.dispatchEvent(new f.win.Event("change", {bubbles: true}));
+    await tick();
+    assert.equal(f.stored.subtitleEnabled, false);
+    assert.equal(f.win.state.overlay.hidden, true);
+    assert.equal(f.win.document.documentElement.classList.contains("ytbt-hide-native-captions"), false);
+    assert.equal(captions.hasAttribute("data-ytbt-native-caption-hidden"), false);
+    assert.equal(captions.style.display, "block");
+    assert.equal(captions.style.visibility, "visible");
+    assert.equal(captions.style.opacity, "0.8");
+    assert.equal(captions.style.pointerEvents, "auto");
+    assert.equal(captions.firstElementChild.style.opacity, "0.6");
+    assert.equal(captions.firstElementChild.style.getPropertyPriority("opacity"), "important");
+    assert.equal(clicks, 0);
+    assert.equal(cc.getAttribute("aria-pressed"), "true");
+    assert.equal(f.win.state.cues.length, 2, "switching off keeps prepared captions");
+    assert.deepEqual(f.calls, []);
+});
+
+test("YouTube caption nodes reused after switching off do not remain hidden", async (t) => {
+    const f = fixture(t);
+    const captions = f.win.document.createElement("div");
+    captions.className = "caption-window";
+    captions.textContent = "YouTube reused caption window";
+    f.$("#movie_player").append(captions);
+    f.win.startNativeCaptionBlocker();
+    assert.equal(captions.style.display, "none");
+    captions.remove();
+    await f.win.savePlayerSettings({subtitleEnabled: false});
+    f.$("#movie_player").append(captions);
+    await tick();
+    assert.equal(captions.style.display, "");
+    assert.equal(captions.hasAttribute("data-ytbt-native-caption-hidden"), false);
+    captions.remove();
+    await f.win.savePlayerSettings({subtitleEnabled: true});
+    f.$("#movie_player").append(captions);
+    await tick();
+    assert.equal(captions.style.display, "none", "switching on still hides native captions");
+    await f.win.savePlayerSettings({subtitleEnabled: false});
+    assert.equal(captions.style.display, "");
+});
+
+test("releasing native captions preserves newer styles written by YouTube", async (t) => {
+    const f = fixture(t);
+    const captions = f.win.document.createElement("div");
+    captions.className = "caption-window";
+    f.$("#movie_player").append(captions);
+    f.win.updateNativeCaptionBlocking(true);
+    captions.style.setProperty("display", "inline-flex");
+    f.win.updateNativeCaptionBlocking(true);
+    await f.win.savePlayerSettings({subtitleEnabled: false});
+    assert.equal(captions.style.display, "inline-flex");
+    assert.equal(captions.style.getPropertyPriority("display"), "");
+});
+
+test("switching off AuraTranslate does not enable captions that YouTube turned off", async (t) => {
+    const f = fixture(t);
+    const captions = f.win.document.createElement("div");
+    captions.className = "caption-window";
+    f.$("#movie_player").append(captions);
+    f.win.updateNativeCaptionBlocking(true);
+    captions.style.setProperty("display", "none");
+    f.win.updateNativeCaptionBlocking(true);
+    await f.win.savePlayerSettings({subtitleEnabled: false});
+    assert.equal(captions.style.display, "none");
+    assert.equal(captions.style.getPropertyPriority("display"), "");
+    assert.equal(captions.hasAttribute("data-ytbt-native-caption-hidden"), false);
+});
+
 test("player menus follow page theme and panels mount outside the video", async (t) => {
     const f = fixture(t);
     assert.equal(f.$(".ytbt-player-ui").parentElement, f.win.document.body);

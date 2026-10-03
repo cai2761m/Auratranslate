@@ -8,7 +8,7 @@ html.ytbt-hide-native-captions .html5-video-player .caption-visual-line,
 html.ytbt-hide-native-captions .html5-video-player .ytp-caption-segment,
 html.ytbt-hide-native-captions .ytp-caption-window-container,
 html.ytbt-hide-native-captions .caption-window,
-[data-ytbt-native-caption-hidden="true"] {
+html.ytbt-hide-native-captions [data-ytbt-native-caption-hidden="true"] {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;

@@ -90,22 +90,24 @@ function renderLoop() {
 
 
 // --- Native caption overlay blocking ---
+var nativeCaptionStyleSnapshots = new WeakMap();
+var NATIVE_CAPTION_BLOCKED_STYLES = {
+    display: "none", visibility: "hidden", opacity: "0", "pointer-events": "none"
+};
+
 function startNativeCaptionBlocker() {
     if (state.nativeCaptionObserver) {
         return;
     }
 
     state.nativeCaptionObserver = new MutationObserver((mutations) => {
-        if (!shouldBlockNativeCaptions()) {
-            return;
-        }
-
         for (const mutation of mutations) {
             if (mutation.type !== "childList") {
                 continue;
             }
             for (const node of mutation.addedNodes) {
-                hideNativeCaptionNodeTree(node);
+                if (shouldBlockNativeCaptions()) hideNativeCaptionNodeTree(node);
+                else restoreNativeCaptionNodes(node);
             }
         }
     });
@@ -160,12 +162,23 @@ function hideNativeCaptionNodeTree(root) {
         if (Core.isProtectedVideoContainer(node, state.overlay)) {
             continue;
         }
-        node.dataset.ytbtNativeCaptionHidden = "true";
-        node.style.setProperty("display", "none", "important");
-        node.style.setProperty("visibility", "hidden", "important");
-        node.style.setProperty("opacity", "0", "important");
-        node.style.setProperty("pointer-events", "none", "important");
+        hideNativeCaptionNode(node);
     }
+}
+
+function hideNativeCaptionNode(node) {
+    const snapshot = nativeCaptionStyleSnapshots.get(node) || {};
+    const previouslyHidden = node.dataset.ytbtNativeCaptionHidden === "true";
+    for (const [property, value] of Object.entries(NATIVE_CAPTION_BLOCKED_STYLES)) {
+        const current = node.style.getPropertyValue(property);
+        const priority = node.style.getPropertyPriority(property);
+        if (!previouslyHidden || current !== value || priority !== "important") {
+            snapshot[property] = {value: current, priority};
+        }
+        node.style.setProperty(property, value, "important");
+    }
+    nativeCaptionStyleSnapshots.set(node, snapshot);
+    node.dataset.ytbtNativeCaptionHidden = "true";
 }
 
 function hideCaptionLikePlayerOverlays() {
@@ -189,11 +202,7 @@ function hideCaptionLikePlayerOverlays() {
         if (!isLikelyNativeCaptionOverlay(node, playerRect)) {
             continue;
         }
-        node.dataset.ytbtNativeCaptionHidden = "true";
-        node.style.setProperty("display", "none", "important");
-        node.style.setProperty("visibility", "hidden", "important");
-        node.style.setProperty("opacity", "0", "important");
-        node.style.setProperty("pointer-events", "none", "important");
+        hideNativeCaptionNode(node);
     }
 }
 
@@ -288,14 +297,24 @@ function textPairLooksRelated(left, right) {
     return longer.includes(shorter.slice(0, Math.min(48, shorter.length)));
 }
 
-function restoreNativeCaptionNodes() {
-    for (const node of document.querySelectorAll('[data-ytbt-native-caption-hidden="true"]')) {
-        delete node.dataset.ytbtNativeCaptionHidden;
-        node.style.removeProperty("display");
-        node.style.removeProperty("visibility");
-        node.style.removeProperty("opacity");
-        node.style.removeProperty("pointer-events");
+function restoreNativeCaptionNodes(root = document) {
+    const selector = '[data-ytbt-native-caption-hidden="true"]';
+    const nodes = root.querySelectorAll ? Array.from(root.querySelectorAll(selector)) : [];
+    if (root.matches && root.matches(selector)) nodes.push(root);
+    for (const node of nodes) restoreNativeCaptionNode(node);
+}
+
+function restoreNativeCaptionNode(node) {
+    const snapshot = nativeCaptionStyleSnapshots.get(node);
+    delete node.dataset.ytbtNativeCaptionHidden;
+    for (const [property, value] of Object.entries(NATIVE_CAPTION_BLOCKED_STYLES)) {
+        // Release only our overrides; a newer YouTube style still belongs to YouTube.
+        if (node.style.getPropertyValue(property) !== value || node.style.getPropertyPriority(property) !== "important") continue;
+        const original = snapshot && snapshot[property];
+        if (original && original.value) node.style.setProperty(property, original.value, original.priority);
+        else node.style.removeProperty(property);
     }
+    nativeCaptionStyleSnapshots.delete(node);
 }
 
 function restoreProtectedPlayerContainers() {
@@ -303,10 +322,6 @@ function restoreProtectedPlayerContainers() {
         if (!Core.isProtectedVideoContainer(node, state.overlay)) {
             continue;
         }
-        delete node.dataset.ytbtNativeCaptionHidden;
-        node.style.removeProperty("display");
-        node.style.removeProperty("visibility");
-        node.style.removeProperty("opacity");
-        node.style.removeProperty("pointer-events");
+        restoreNativeCaptionNode(node);
     }
 }

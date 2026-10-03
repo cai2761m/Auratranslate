@@ -25,6 +25,7 @@ async function main() {
           .ytp-right-controls {float: right; height: 48px; display: flex;}
           .ytp-button {height: 48px; width: 44px; line-height: 90px; border: 0; color: white; background: none; font-size: 18px; cursor: pointer;}
           .video-heading {position: absolute; top: 20px; left: 24px; font-size: 20px;}
+          #native-captions {position: absolute; bottom: 96px; left: 24px; max-width: 500px; padding: 8px 12px; font-size: 18px; background: #000b; color: white;}
           #movie_player:fullscreen {width: 100vw; height: 100vh; aspect-ratio: auto;}
           @media (max-width: 600px) {main {margin: 24px auto;}}
         </style></head><body><ytd-watch-flexy><main><div id="movie_player" class="html5-video-player"><video></video><div class="video-heading">Sample video</div><div class="ytp-chrome-bottom"><span>00:10 / 12:00</span><div class="ytp-right-controls"><button class="ytp-button" aria-label="Settings">⚙</button><button class="ytp-button" id="fullscreen" aria-label="Fullscreen">⛶</button></div></div></div></main></ytd-watch-flexy></body></html>`}));
@@ -67,6 +68,24 @@ async function main() {
                 translatedText: i === 0 ? "欢迎观看这段介绍浏览器扩展的视频。" : `第 ${i} 节：字幕会与视频保持同步。`, status: "translated"}));
             scheduleTranslations = () => {};
             bindStorageChanges();
+            const captions = document.createElement("div");
+            captions.id = "native-captions";
+            captions.className = "ytp-caption-window-container";
+            captions.style.opacity = "0.8";
+            captions.textContent = "Original YouTube captions remain available.";
+            document.querySelector("#movie_player").appendChild(captions);
+            const cc = document.createElement("button");
+            cc.className = "ytp-button ytp-subtitles-button";
+            cc.textContent = "CC";
+            cc.setAttribute("aria-label", "YouTube captions");
+            cc.setAttribute("aria-pressed", "true");
+            cc.onclick = () => {
+                const enabled = cc.getAttribute("aria-pressed") !== "true";
+                cc.setAttribute("aria-pressed", String(enabled));
+                captions.style.display = enabled ? "block" : "none";
+            };
+            document.querySelector(".ytp-right-controls").prepend(cc);
+            startNativeCaptionBlocker();
             startPlayerControls();
             ensureOverlay();
             updateOverlay();
@@ -90,9 +109,27 @@ async function main() {
         await page.waitForFunction(() => document.querySelector(".ytbt-player-ui").dataset.theme === "dark");
         assert.equal(await page.locator(".ytbt-player-menu").evaluate((el) => getComputedStyle(el).backgroundColor), "rgb(32, 32, 34)");
         await page.screenshot({path: path.join(screenshots, "player-menu-dark.png")});
+        assert.equal(await page.locator("#native-captions").isVisible(), false);
+        await page.evaluate(() => {
+            window.reusedNativeCaptions = document.querySelector("#native-captions");
+            reusedNativeCaptions.remove();
+        });
         await page.locator('[data-setting="subtitleEnabled"]').uncheck();
         await page.waitForFunction(() => window.stored.subtitleEnabled === false && state.overlay.hidden);
+        await page.evaluate(() => document.querySelector("#movie_player").appendChild(reusedNativeCaptions));
+        await page.locator("#native-captions").waitFor({state: "visible"});
+        assert.equal(await page.locator("#native-captions").getAttribute("data-ytbt-native-caption-hidden"), null);
+        assert.equal(await page.locator("#native-captions").evaluate((el) => getComputedStyle(el).opacity), "0.8");
+        assert.equal(await page.locator(".ytp-subtitles-button").getAttribute("aria-pressed"), "true");
+        await page.screenshot({path: path.join(screenshots, "player-native-captions-restored.png")});
+        await page.locator(".ytp-subtitles-button").click();
+        assert.equal(await page.locator("#native-captions").isVisible(), false);
+        await page.locator(".ytp-subtitles-button").click();
+        assert.equal(await page.locator("#native-captions").isVisible(), true);
+        await button.click();
         await page.locator('[data-setting="subtitleEnabled"]').check();
+        assert.equal(await page.locator("#native-captions").isVisible(), false);
+        assert.equal(await page.locator(".ytp-subtitles-button").getAttribute("aria-pressed"), "true");
         await page.locator('[data-action="style"]').click();
         await page.locator('[data-setting="fontScale"]').fill("1.25");
         await page.locator('[data-setting="fontScale"]').dispatchEvent("change");

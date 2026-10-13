@@ -10,8 +10,9 @@
     const FIRST_BATCH_SIZE = 4;
     const VISIBLE_BATCH_CHAR_LIMIT = 1800;
     const MAX_CONCURRENT_BATCHES = 3;
-    // Three 60s provider attempts plus up to 45s of retry backoff and persistence.
-    const MESSAGE_TIMEOUT_MS = 240000;
+    // One 60s context analysis, three 60s translation attempts, retry backoff,
+    // and persistence. Cache progress probes remain short and read-only.
+    const MESSAGE_TIMEOUT_MS = 360000;
     const CACHE_MESSAGE_TIMEOUT_MS = 15000;
     const CACHE_POLL_INTERVAL_MS = 5000;
     const MAX_RECOVERY_POLLS = 12;
@@ -23,6 +24,8 @@
         state.runToken += 1;
         clearRecovery();
         state.translated = false;
+        state.runPageContext = null;
+        state.contextRunId = "";
         App.clearExistingTranslations();
         App.updateBallMode("idle");
         App.showStatus(null);
@@ -138,6 +141,23 @@
         }
 
         const token = (state.runToken += 1);
+        let heading = "";
+        for (let index = 0; index < blocks.length; index += 1) {
+            const block = blocks[index];
+            if (/^H[1-6]$/.test(block.element.tagName)) heading = block.sourceText;
+            block.heading = heading;
+            block.contextText = [heading, blocks[index - 1]?.sourceText?.slice(-700),
+                blocks[index + 1]?.sourceText?.slice(0, 700)].filter(Boolean).join("\n").slice(0, 1800);
+        }
+        // Freeze the document-order snapshot before viewport sorting. Outline
+        // expansions reuse the original plan so already rendered terms stay stable.
+        if (!appendOutlines) {
+            state.contextRunId = `${Date.now()}:${Math.random().toString(36).slice(2)}`;
+            state.runPageContext =
+                state.runPreferences.immersiveTranslationService === "ai" && state.runPreferences.immersiveDeepContextEnabled !== false
+                    ? Core.buildImmersivePageContext({title: document.title,
+                        blocks: blocks.map((block) => ({text: block.sourceText, heading: block.heading}))}) : null;
+        }
         // A superseded run must not write progress onto the new page's control.
         state.panelStatusText = "";
         state.panelStatusPersistent = false;
@@ -181,6 +201,7 @@
             const cachedItems = await translateBatch(blocks, true, pageUrl);
             if (!isCurrentRun(token, pageUrl)) return;
             const pending = applyItems(blocks, cachedItems);
+            if (pending.length && state.runPageContext) App.showStatus(`Translating ${translatedCount}/${blocks.length} blocks... 正在理解页面上下文并统一术语…`, true);
             let firstBatch = true;
             let batchSizeLimit = BATCH_SIZE;
             let failure = null;
@@ -285,15 +306,18 @@
             type: "IMMERSIVE_TRANSLATE",
             pageUrl,
             cacheOnly,
+            ...(state.runPageContext ? {pageContext: state.runPageContext, contextRunId: state.contextRunId} : {}),
             preferences: {
                 immersiveSourceLanguage: state.runPreferences?.immersiveSourceLanguage || "auto",
                 immersiveTargetLanguage: state.runPreferences?.immersiveTargetLanguage || state.runPreferences?.targetLanguage || "zh-CN",
-                immersiveTranslationService: state.runPreferences?.immersiveTranslationService || "ai"
+                immersiveTranslationService: state.runPreferences?.immersiveTranslationService || "ai",
+                immersiveDeepContextEnabled: state.runPreferences?.immersiveDeepContextEnabled !== false
             },
             items: batch.map((block) => ({
                 id: block.id,
                 sourceText: block.sourceText,
-                formattedText: block.formattedText
+                formattedText: block.formattedText,
+                ...(state.runPageContext ? {contextText: block.contextText} : {})
             }))
         };
         const response = cacheOnly ? await sendMessage(message) : await sendWithCacheProgress(message, onProgress);

@@ -75,3 +75,16 @@ test("site hostname normalization rejects active URLs and wildcard rules", () =>
     assert.equal(Core.normalizeSiteHostname("*.example.com"), "");
     assert.deepEqual(Core.normalizeDisabledSites(["example.com", "EXAMPLE.com", null]), ["example.com"]);
 });
+
+test("immersive deep context defaults on and persists independently of subtitle processing", async (t) => {
+    const page = await mount(t, "options", {hash: "#immersive-api"});
+    const toggle = page.field("immersiveDeepContextEnabled");
+    assert.equal(toggle.closest("section").id, "immersive-api");
+    assert.equal(toggle.checked, true);
+    setValue(toggle, false);
+    await page.save();
+    assert.equal(page.storage.immersiveDeepContextEnabled, false);
+    assert.equal(page.storage.llmSentenceSegmentationEnabled, true);
+    const reloaded = await mount(t, "options", {hash: "#immersive-api", storage: page.storage});
+    assert.equal(reloaded.field("immersiveDeepContextEnabled").checked, false);
+});

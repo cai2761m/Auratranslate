@@ -28,6 +28,16 @@ async function main() {
             await page.screenshot({path: path.join(screenshots, `realtime-${width}.png`), fullPage: true});
         }
         await page.locator("#tab-immersive-api").click();
+        const contextToggle = page.locator("#immersiveDeepContextEnabled");
+        assert.equal(await contextToggle.isChecked(), true);
+        await contextToggle.uncheck();
+        await page.waitForFunction(() => document.querySelector("#status").textContent.includes("已自动保存"));
+        await page.reload();
+        await page.locator("#immersiveDeepContextEnabled").waitFor();
+        assert.equal(await contextToggle.isChecked(), false);
+        await contextToggle.check();
+        await page.waitForFunction(() => document.querySelector("#status").textContent.includes("已自动保存"));
+        await page.screenshot({path: path.join(screenshots, "context-settings-320.png"), fullPage: true});
         await page.locator("#disabled-site-input").fill("https://www.YouTube.com/watch?v=sample");
         await page.locator("#add-disabled-site").click();
         await page.waitForFunction(() => document.querySelector("#status").textContent.includes("已自动保存"));

@@ -31,6 +31,8 @@
         recovering: false,
         preferences: {...Core.DEFAULT_SETTINGS},
         runPreferences: null,
+        runPageContext: null,
+        contextRunId: "",
         preferencesReady: null,
         ballTopPct: DEFAULT_BALL_TOP_PCT,
         ballDrag: {

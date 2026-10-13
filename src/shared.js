@@ -68,7 +68,10 @@
         migrateLegacyTranslationServices: Shared.migrateLegacyTranslationServices,
         planTranslationServices: Shared.planTranslationServices,
         resolveTranslationConfig: Shared.resolveTranslationConfig,
-        parseDeepSeekTranslationContent: Shared.parseDeepSeekTranslationContent
+        parseDeepSeekTranslationContent: Shared.parseDeepSeekTranslationContent,
+        buildImmersivePageContext: Shared.buildImmersivePageContext,
+        normalizeImmersivePageContext: Shared.normalizeImmersivePageContext,
+        parseImmersiveContextContent: Shared.parseImmersiveContextContent
     };
     root.YTBTCore = api;
     if (typeof module !== "undefined" && module.exports) module.exports = api;

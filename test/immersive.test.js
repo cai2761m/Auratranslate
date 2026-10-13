@@ -7,6 +7,36 @@ const path = require("node:path");
 const sharedScript = require("../scripts/extension-scripts.cjs").source("shared");
 const immersiveScript = require("../scripts/extension-scripts.cjs").source("immersive");
 
+test("page context is shared across viewport batches and contains offscreen source in document order", async (t) => {
+  const html = `<title>Technical bank guide</title><main><h1>Financial institutions</h1>${Array.from({length: 12}, (_, i) => `<p id="p${i}">The bank offers financial service number ${i}.</p>`).join("")}</main>`;
+  const {requests} = await translatePage(t, html, {rect(element) {
+    return element.id === "p10" ? {top: 0, bottom: 30} : {top: 2000, bottom: 2030};
+  }});
+  const paid = requests.filter((request) => !request.cacheOnly);
+  assert.ok(paid.length > 1);
+  const context = requests[0].pageContext;
+  assert.equal(context.title, "Technical bank guide");
+  assert.equal(context.blocks[0].text, "Financial institutions");
+  assert.ok(context.blocks.at(-1).text.includes("number 11"));
+  assert.ok(paid[0].items[0].sourceText.includes("number 10"));
+  assert.ok(paid[0].items[0].contextText.includes("number 9"));
+  for (const request of requests) {
+    assert.equal(request.pageContext, context);
+    assert.equal(request.contextRunId, requests[0].contextRunId);
+    assert.equal(request.preferences.immersiveDeepContextEnabled, true);
+  }
+});
+
+test("disabled deep context omits the page snapshot from all requests", async (t) => {
+  const {requests} = await translatePage(t, "<main><p>The bank offers financial services.</p></main>", {
+    setup(window) {
+      window.chrome.storage.local.get = (defaults, callback) => callback({...defaults, immersiveDeepContextEnabled: false});
+    }
+  });
+  assert.ok(requests.every((request) => request.pageContext === undefined));
+  assert.ok(requests.every((request) => request.preferences.immersiveDeepContextEnabled === false));
+});
+
 async function translatePage(t, html, options = {}) {
   const dom = new JSDOM(html, { url: "https://docs.flutter.dev/install/quick", runScripts: "outside-only", pretendToBeVisual: true });
   t.after(() => dom.window.close());

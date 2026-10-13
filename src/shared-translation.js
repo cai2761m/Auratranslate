@@ -170,5 +170,79 @@
         return items;
     }
 
-    Object.assign(Shared, {parseLooseJsonContent, parseDeepSeekTranslationContent});
+    const PAGE_CONTEXT_CHAR_LIMIT = 32000;
+    const PAGE_CONTEXT_BLOCK_LIMIT = 240;
+
+    function contextText(value, limit) {
+        return typeof value === "string"
+            ? value.replace(/\s+/g, " ").trim().slice(0, limit).replace(/[\uD800-\uDBFF]$/, "") : "";
+    }
+
+    // Keep every collected paragraph represented, including the end of long pages.
+    // The fingerprint covers the full source, even when the model receives excerpts.
+    function buildImmersivePageContext({title, blocks} = {}) {
+        const sources = (Array.isArray(blocks) ? blocks : []).slice(0, PAGE_CONTEXT_BLOCK_LIMIT)
+            .map((block) => ({text: contextText(block && block.text, Infinity), heading: contextText(block && block.heading, 180)}))
+            .filter((block) => block.text);
+        const normalizedTitle = contextText(title, 300);
+        const fullSource = JSON.stringify([normalizedTitle, sources]);
+        let remaining = PAGE_CONTEXT_CHAR_LIMIT;
+        const sampled = sources.map((block, index) => {
+            const budget = Math.max(1, Math.floor(remaining / (sources.length - index)));
+            const heading = contextText(block.heading, Math.floor(budget / 4));
+            const text = contextText(block.text, budget - heading.length);
+            remaining -= text.length + heading.length;
+            return {text, heading};
+        });
+        return {
+            title: normalizedTitle,
+            contentFingerprint: `${fullSource.length}:${Shared.fingerprintText(fullSource)}`,
+            sampled: sources.some((block, index) => block.text !== sampled[index].text || block.heading !== sampled[index].heading),
+            blocks: sampled
+        };
+    }
+
+    function normalizeImmersivePageContext(value) {
+        if (!value || !Array.isArray(value.blocks)) return null;
+        const normalized = buildImmersivePageContext(value);
+        if (!normalized.blocks.length) return null;
+        // Preserve the full-source identity carried by the page's bounded snapshot.
+        if (typeof value.contentFingerprint === "string" && /^\d+:[a-z0-9]{1,10}$/.test(value.contentFingerprint)) {
+            normalized.contentFingerprint = value.contentFingerprint;
+        }
+        normalized.sampled = normalized.sampled || value.sampled === true;
+        return normalized;
+    }
+
+    function parseImmersiveContextContent(content, pageContext) {
+        const parsed = parseLooseJsonContent(content);
+        if (!parsed || typeof parsed.summary !== "string" || !parsed.summary.trim() || !Array.isArray(parsed.terms)) {
+            throw new Error("页面上下文分析返回了无效结果，请更换模型或关闭深度理解后重试。");
+        }
+        const source = [pageContext.title, ...pageContext.blocks.map((block) => block.text)].join(" ").toLowerCase();
+        const terms = [];
+        const senses = new Map();
+        for (const entry of parsed.terms.slice(0, 60)) {
+            const term = {
+                source: contextText(entry && entry.source, 100),
+                target: contextText(entry && entry.target, 100),
+                meaning: contextText(entry && entry.meaning, 240)
+            };
+            if (!term.source || !term.target || !term.meaning || !source.includes(term.source.toLowerCase())) continue;
+            if (/\[\[|<[^>]*>/.test(term.source + term.target)) continue;
+            const key = JSON.stringify([term.source.toLowerCase(), term.meaning.toLowerCase()]);
+            if (senses.has(key)) {
+                if (senses.get(key) !== term.target) throw new Error("页面术语表包含同义冲突，请更换模型后重试。");
+                continue;
+            }
+            senses.set(key, term.target);
+            terms.push(term);
+        }
+        return {summary: contextText(parsed.summary, 1600), terms};
+    }
+
+    Object.assign(Shared, {
+        parseLooseJsonContent, parseDeepSeekTranslationContent,
+        buildImmersivePageContext, normalizeImmersivePageContext, parseImmersiveContextContent
+    });
 });

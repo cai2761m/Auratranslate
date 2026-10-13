@@ -82,6 +82,7 @@ export function settingsPatch(settings) {
         "immersiveTranslationServiceId",
         "immersiveTranslationModelId",
         "translationJsonResponse",
+        "immersiveDeepContextEnabled",
         "llmSentenceSegmentationEnabled",
         "asrCorrectionEnabled",
         "showOriginalTechnicalTerms",

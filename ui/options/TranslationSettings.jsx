@@ -132,6 +132,17 @@ export function TranslationSettings({
                 />
                 <span>JSON 输出模式<small>让模型返回结构化结果，服务不兼容时可关闭。</small></span>
             </label>
+            {immersive && (
+                <label className="toggle">
+                    <input
+                        id="immersiveDeepContextEnabled"
+                        type="checkbox"
+                        checked={settings.immersiveDeepContextEnabled !== false}
+                        onChange={(event) => update({immersiveDeepContextEnabled: event.target.checked})}
+                    />
+                    <span>LLM 深度理解上下文<small>先分析页面主题与术语含义，再共享术语表翻译各段，让同一含义保持一致译法。仅 AI 翻译生效；首次分析会增加等待时间和 API 用量，长页面会抽样。</small></span>
+                </label>
+            )}
             {immersive ? <DisabledSites settings={settings} update={update}/> : <SubtitlePreferences settings={settings} update={update}/>}
         </section>
     );

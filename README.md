@@ -111,6 +111,7 @@ Select the provider and model under **实时字幕** (Video subtitles). **沉浸
 | Translation scope | Economy mode, 2-minute lookahead; 1 / 2 / 3 minutes or full video |
 | Subtitle size | `1.00×`; adjustable from `0.30×` to `3.00×` |
 | LLM sentence segmentation | On; combines fragmented captions before translation and uses the subtitle API |
+| LLM deep page context | On; configured under Webpage translation, AI only. One initial API call analyzes the page topic and word senses, then all batches share a glossary. Successful plans are cached. Adds latency and API usage; long pages use paragraph excerpts totaling about 32,000 characters |
 | Caption text correction | On; asks the model to correct obvious recognition errors in existing captions |
 | Original technical terms | On; includes original terms alongside their Chinese translations |
 | JSON output mode | On; turn off if your compatible endpoint rejects the option |
@@ -133,6 +134,8 @@ Video translation requires existing English captions on YouTube or a transcript 
 
 Matching successful translations are cached locally. Switching bilingual/translation-only display, hiding/showing results, or changing subtitle size does not request a new translation. Changing the model, endpoint, language, or relevant caption-processing settings may require new results. Cache entries have a size limit and older entries can be evicted.
 
+Deep page context shares one glossary across all AI batches. The page title, readable paragraphs, nearby source text and section headings help distinguish word senses: a financial bank and a river bank can have different translations, while matching meanings use the same target term. Changed page content gets a separate context cache; older AI translations are regenerated when this feature is enabled. Google/Bing modes do not perform LLM analysis.
+
 When a webpage request times out with an uncertain outcome, the extension checks for late cached results instead of automatically resending it. Completed paragraphs remain available. Return to the tab to recover results, or manually continue missing work. Requests already sent to a provider may still finish and incur charges.
 
 </details>
@@ -151,7 +154,7 @@ When a webpage request times out with an uncertain outcome, the extension checks
 <details>
 <summary><strong>Where do my text and API key go?</strong></summary>
 
-No AuraTranslate account is required. Caption and webpage text is sent to the translation service you select; LLM sentence segmentation also sends caption text to your configured service. Google mode sends webpage text to Google's public translation endpoint without browser cookies.
+No AuraTranslate account is required. Caption and webpage text is sent to the translation service you select; LLM sentence segmentation also sends caption text to your configured service. Deep page context sends the page title and readable source excerpts to the selected webpage AI service. Google mode sends webpage text to Google's public translation endpoint without browser cookies.
 
 Settings, keys, positions, and caches are stored in browser extension local storage. **API keys are not additionally encrypted by the extension.** The password field only masks their display. `storage` permission supports these local settings; HTTP/HTTPS host access lets the extension read page text, render translations, and contact your chosen API, including local endpoints.
 

@@ -30,6 +30,7 @@
         immersiveSourceLanguage: "auto",
         immersiveTargetLanguage: "",
         immersiveTranslationService: "ai",
+        immersiveDeepContextEnabled: true,
         immersiveDisplayMode: "bilingual",
         immersiveAutoTranslate: false,
         immersiveSiteRules: {},

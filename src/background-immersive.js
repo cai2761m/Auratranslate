@@ -1,12 +1,20 @@
 // Webpage translation identities, cache hydration, and selected provider routing.
 // Classic scripts share the dedicated background scope; background.js loads them
 // synchronously in Chrome, and manifest.json supplies the same order in Firefox.
+const inFlightImmersiveContexts = new Map();
+const completedImmersiveContexts = new Map();
+const failedImmersiveContexts = new Map();
+const IMMERSIVE_CONTEXT_CACHE_ID = "__pageContext";
+
 async function handleImmersiveTranslate(message) {
     const settings = await storageGet(Core.DEFAULT_SETTINGS);
     const preferences = message.preferences || settings;
     const targetLanguage = preferences.immersiveTargetLanguage || settings.targetLanguage || Core.DEFAULT_SETTINGS.targetLanguage;
     const sourceLanguage = preferences.immersiveSourceLanguage || "auto";
     const service = preferences.immersiveTranslationService || "ai";
+    const pageContext = service === "ai" &&
+        (preferences.immersiveDeepContextEnabled ?? settings.immersiveDeepContextEnabled) !== false
+        ? Core.normalizeImmersivePageContext(message.pageContext) : null;
     const translationConfig = Core.resolveTranslationConfig(settings, "immersive");
     if (["google-free", "bing-free"].includes(service)) {
         // A selected built-in service translates directly, without an AI fallback.
@@ -30,7 +38,8 @@ async function handleImmersiveTranslate(message) {
                 ? String(item.formattedText).replace(/\s+/g, " ").trim()
                 : Core.normalizeSubtitleText(item && item.sourceText),
             plainText: Core.normalizeSubtitleText(item && item.sourceText),
-            hasFormatting: Boolean(item && item.formattedText)
+            hasFormatting: Boolean(item && item.formattedText),
+            contextText: typeof (item && item.contextText) === "string" ? item.contextText.slice(0, 1800) : ""
         }))
         .filter((item) => item.id && item.sourceText);
 
@@ -49,11 +58,14 @@ async function handleImmersiveTranslate(message) {
     const cacheKey = `ytbt:immersive:${await immersiveFingerprint(JSON.stringify([
         String(message.pageUrl || "").split("#")[0],
         translationConfig.provider, endpointUrl, translationConfig.model,
-        sourceLanguage, targetLanguage, settings.cacheVersion || "1", "immersive-v1"
+        sourceLanguage, targetLanguage, settings.cacheVersion || "1", "immersive-v1",
+        ...(pageContext ? ["deep-context-v1", pageContext] : [])
     ]))}`;
     const identities = await Promise.all(cues.map(async (cue) => ({
-        ...cue, cacheId: await immersiveFingerprint(cue.sourceText),
-        plainId: await immersiveFingerprint(cue.plainText)
+        // Identical short text can mean different things under different headings.
+        // Deep-context results must include local semantic context in their identity.
+        ...cue, cacheId: await immersiveFingerprint(pageContext ? JSON.stringify([cue.sourceText, cue.contextText]) : cue.sourceText),
+        plainId: await immersiveFingerprint(pageContext ? JSON.stringify([cue.plainText, cue.contextText]) : cue.plainText)
     })));
     const uniqueCues = new Map(identities.map((cue) => [cue.cacheId, {...cue, id: cue.cacheId}]));
     const cache = await storageGet({[cacheKey]: {items: {}}});
@@ -92,11 +104,19 @@ async function handleImmersiveTranslate(message) {
         if (builtInProvider === "off" && (!translationConfig.apiKey || !endpointUrl || !translationConfig.model)) {
             throw new Error(`${translationConfig.providerLabel} ${!translationConfig.apiKey ? "API Key" : "base URL or model"} is not configured.`);
         }
+        // All concurrent paragraph requests wait for the same immutable plan.
+        // Cache-only probes never generate a plan or contact the provider.
+        const maxItems = Number(settings.translationCacheMaxItems) || Core.DEFAULT_CACHE_MAX_ITEMS;
+        const pageContextPlan = pageContext ? await resolveImmersiveContext({
+            cacheKey, storedItems, pageContext, translationConfig, sourceLanguage, targetLanguage, maxItems,
+            contextRunId: typeof message.contextRunId === "string" ? message.contextRunId.slice(0, 100) : ""
+        }) : null;
         const translatedItems = await translateMissingCues({
             cacheKey, translationConfig, targetLanguage, sourceLanguage,
             asrCorrectionEnabled: false,
             cues: missing,
             mode: "immersive",
+            pageContextPlan,
             translateCues: builtInProvider === "off" ? undefined : (request, retain) =>
                 translateImmersiveBuiltIn(request, builtInProvider, retain),
             async persistItems(items) {
@@ -112,12 +132,11 @@ async function handleImmersiveTranslate(message) {
                         };
                     }
                 }
-                const maxItems = Number(settings.translationCacheMaxItems) || Core.DEFAULT_CACHE_MAX_ITEMS;
                 await persistTranslationCache({
                     cacheKey,
                     cacheValue: {items: newItems, updatedAt: Date.now()},
                     maxItems,
-                    maxItemsPerKey: Math.max(1, Math.min(240, maxItems))
+                    maxItemsPerKey: Math.max(1, Math.min(pageContext ? 241 : 240, maxItems))
                 });
             }
         });
@@ -132,6 +151,56 @@ async function handleImmersiveTranslate(message) {
         })),
         errors: []
     };
+}
+
+async function resolveImmersiveContext(request) {
+    const {cacheKey, storedItems, pageContext, maxItems} = request;
+    const stored = storedItems[IMMERSIVE_CONTEXT_CACHE_ID];
+    if (stored && stored.version === 1) {
+        try {
+            return Core.parseImmersiveContextContent(stored.plan, pageContext);
+        } catch (_) {
+            // An invalid local plan must not contaminate every paragraph.
+        }
+    }
+    const failureKey = `${cacheKey}:${request.contextRunId}`;
+    const failed = failedImmersiveContexts.get(failureKey);
+    if (failed) throw failed;
+    const existing = inFlightImmersiveContexts.get(cacheKey);
+    if (existing) return existing;
+    const pending = (async () => {
+        let plan = completedImmersiveContexts.get(cacheKey);
+        if (!plan) {
+            // One analysis attempt: ambiguous failures must not rebill automatically.
+            try {
+                plan = await translateBatch({...request, cues: [], mode: "immersive-context"});
+            } catch (error) {
+                // A very fast failure can finish before the other concurrently
+                // scheduled requests reach this function. Share it for this run;
+                // an explicit click starts a new run and can try again.
+                failedImmersiveContexts.set(failureKey, error);
+                while (failedImmersiveContexts.size > 32) failedImmersiveContexts.delete(failedImmersiveContexts.keys().next().value);
+                throw error;
+            }
+            completedImmersiveContexts.set(cacheKey, plan);
+            while (completedImmersiveContexts.size > 32) completedImmersiveContexts.delete(completedImmersiveContexts.keys().next().value);
+        }
+        // Count the plan as one cache item so normal capacity limits and cache
+        // clearing also apply to pages whose paragraph translation later fails.
+        await persistTranslationCache({
+            cacheKey,
+            cacheValue: {items: {[IMMERSIVE_CONTEXT_CACHE_ID]: {version: 1, plan}}},
+            maxItems,
+            maxItemsPerKey: Math.max(1, Math.min(241, maxItems))
+        });
+        return plan;
+    })();
+    inFlightImmersiveContexts.set(cacheKey, pending);
+    try {
+        return await pending;
+    } finally {
+        if (inFlightImmersiveContexts.get(cacheKey) === pending) inFlightImmersiveContexts.delete(cacheKey);
+    }
 }
 
 async function immersiveFingerprint(value) {

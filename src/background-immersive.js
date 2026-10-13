@@ -171,10 +171,19 @@ async function resolveImmersiveContext(request) {
     const pending = (async () => {
         let plan = completedImmersiveContexts.get(cacheKey);
         if (!plan) {
-            // One analysis attempt: ambiguous failures must not rebill automatically.
+            // Only an explicit output-limit response permits one compact retry.
+            // Network/port failures may have been billed and must never replay.
             try {
-                plan = await translateBatch({...request, cues: [], mode: "immersive-context"});
+                try {
+                    plan = await translateBatch({...request, cues: [], mode: "immersive-context"});
+                } catch (error) {
+                    if (error.requestMayHaveReachedProvider || error.code !== "IMMERSIVE_CONTEXT_TRUNCATED") throw error;
+                    plan = await translateBatch({...request, cues: [], mode: "immersive-context",
+                        maxOutputTokens: 8000, contextTermLimit: 16, contextSummaryLimit: 400});
+                }
             } catch (error) {
+                error.phase = "context";
+                if (!error.code) error.code = "IMMERSIVE_CONTEXT_FAILED";
                 // A very fast failure can finish before the other concurrently
                 // scheduled requests reach this function. Share it for this run;
                 // an explicit click starts a new run and can try again.

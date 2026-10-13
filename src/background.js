@@ -75,7 +75,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     type: "IMMERSIVE_TRANSLATE_RESULT",
                     ok: false,
                     items: [],
-                    errors: [{message: error && error.message ? error.message : String(error)}]
+                    errors: [{message: error && error.message ? error.message : String(error),
+                        code: error && error.code, phase: error && error.phase}]
                 });
             });
 

@@ -640,6 +640,23 @@ test("a truncated single paragraph stops with actionable guidance instead of loo
   assert.match(document.querySelector(".ytbt-immersive-panel").textContent, /单段译文.*更换模型/);
 });
 
+test("context truncation is not retried by splitting paragraph batches or reported as a long paragraph", async (t) => {
+  const {document, requests} = await translatePage(t, paragraphs(24), {
+    expectedState: "error",
+    sendMessage(message) {
+      return message.cacheOnly ? {ok: true, items: []} : {ok: false, errors: [{
+        message: "ali response truncated (finish_reason=length).", phase: "context", code: "IMMERSIVE_CONTEXT_TRUNCATED"
+      }]};
+    }
+  });
+  const paid = requests.filter((request) => !request.cacheOnly);
+  assert.ok(paid.length <= 3, "paragraph splitting cannot recover a failed page-level plan");
+  assert.ok(paid.every((request) => request.items.length > 1));
+  const status = document.querySelector(".ytbt-immersive-panel").textContent;
+  assert.match(status, /页面上下文分析.*精简术语表/);
+  assert.doesNotMatch(status, /单段译文/);
+});
+
 test("long paragraphs remain within per-request character limits", async (t) => {
   const text = "This sentence is sufficiently long to exercise batching. ".repeat(50);
   const { requests } = await translatePage(t, `<main>${Array.from({ length: 8 }, () => `<p>${text}</p>`).join("")}</main>`);

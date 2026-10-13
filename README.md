@@ -145,6 +145,7 @@ When a webpage request times out with an uncertain outcome, the extension checks
 
 - Confirm the API key, exact model ID, base URL, and model access. Disable JSON output mode if the endpoint rejects it.
 - Google Translate can be rate limited or unavailable; try your configured AI service.
+- Translation requests to documented Alibaba Bailian hybrid DeepSeek endpoints (including `deepseek-v4.1-flash`) explicitly disable thinking so reasoning does not exhaust the output budget. Page topic and glossary analysis still runs. A truncated page analysis gets at most one compact glossary retry and a distinct context-analysis error.
 - Form controls, code blocks, decorative elements, and excluded regions are intentionally skipped. Text inside images, canvas, nested frames, or unsupported page structures may not be extracted.
 - No video subtitles? Check the popup switch and that the video provides a supported caption track or transcript.
 - After updating: reload the extension, then refresh existing tabs. Clearing the cache is usually unnecessary; use it when you need to discard saved results or reread changed source captions.

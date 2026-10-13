@@ -10,7 +10,7 @@
     const FIRST_BATCH_SIZE = 4;
     const VISIBLE_BATCH_CHAR_LIMIT = 1800;
     const MAX_CONCURRENT_BATCHES = 3;
-    // One 60s context analysis, three 60s translation attempts, retry backoff,
+    // Up to two 60s context attempts, three 60s translation attempts, retry backoff,
     // and persistence. Cache progress probes remain short and read-only.
     const MESSAGE_TIMEOUT_MS = 360000;
     const CACHE_MESSAGE_TIMEOUT_MS = 15000;
@@ -230,7 +230,7 @@
                         if (missing.length) throw new Error("Translation missing for some blocks. Click to retry.");
                     } catch (error) {
                         if (!isCurrentRun(token, pageUrl)) return;
-                        if (!failure && !isUncertainRequest(error) && isTruncatedResponse(error) && batch.length > 1) {
+                        if (!failure && error.phase !== "context" && !isUncertainRequest(error) && isTruncatedResponse(error) && batch.length > 1) {
                             // Persistently reduce this run's batch size so requeued blocks
                             // cannot merge back into the batch that exhausted output tokens.
                             batchSizeLimit = Math.min(batchSizeLimit, Math.ceil(batch.length / 2));
@@ -272,7 +272,9 @@
                 App.showStatus("翻译响应暂时中断，已完成的译文会保留。正在检查缓存，不会自动重发付费请求。", true);
                 await recoverCachedTranslations();
             } else {
-                App.showStatus(isTruncatedResponse(error)
+                App.showStatus(error.phase === "context" && isTruncatedResponse(error)
+                    ? "翻译暂停：页面上下文分析超出模型输出上限。已尝试精简术语表；请在沉浸式翻译设置中关闭深度理解或更换模型后重试。"
+                    : isTruncatedResponse(error)
                     ? "翻译暂停：单段译文仍超出模型输出上限。已保留完成的译文，请在沉浸式翻译设置中更换模型后重试。"
                     : `翻译暂停：${message}`, true);
             }
@@ -323,8 +325,13 @@
         const response = cacheOnly ? await sendMessage(message) : await sendWithCacheProgress(message, onProgress);
 
         if (!response || response.ok === false) {
-            const error = response && response.errors && response.errors[0];
-            throw new Error(error && error.message ? error.message : "Translation request failed.");
+            const details = response && response.errors && response.errors[0];
+            const error = new Error(details && details.message ? details.message : "Translation request failed.");
+            if (details) {
+                error.code = details.code;
+                error.phase = details.phase;
+            }
+            throw error;
         }
 
         return Array.isArray(response.items) ? response.items : [];

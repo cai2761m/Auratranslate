@@ -32,7 +32,7 @@ function fixture({gemini = false, mode = "worker"} = {}) {
     function start() {
         let listener;
         const runtime = {onMessage: {addListener(fn) { listener = fn; }}};
-        const context = vm.createContext({AbortController, setTimeout, clearTimeout, TextEncoder,
+        const context = vm.createContext({AbortController, setTimeout, clearTimeout, TextEncoder, URL,
             crypto: require("node:crypto").webcrypto, YTBTCore: Core,
             chrome: {runtime, storage: {local: {
                 get(defaults, done) { done(defaults === null ? structuredClone(data) : {...defaults, ...structuredClone(data)}); },
@@ -54,7 +54,10 @@ function fixture({gemini = false, mode = "worker"} = {}) {
                 const input = JSON.parse(gemini ? payload.contents[0].parts[0].text : payload.messages[1].content);
                 const kind = system.includes("context and terminology analyst") ? "context" : "translation";
                 requests.push({kind, system, input, payload});
-                if (hooks.fetch) await hooks.fetch({kind, input});
+                if (hooks.fetch) {
+                    const response = await hooks.fetch({kind, input, payload, system, url});
+                    if (response) return response;
+                }
                 const result = kind === "context" ? (hooks.plan || plan) : {items: input.items.map((item) => {
                     const sense = item.text.includes("river") || item.context === "Landscape" ? "land alongside a river" : "financial institution offering accounts or loans";
                     const glossaryTerm = input.pageContext?.terms.find((term) => term.source === "bank" && term.meaning === sense);
@@ -195,6 +198,79 @@ test("analysis failures stop all concurrent translations without automatic repla
     assert.equal(f.requests.length, 1);
     assert.equal((await worker.send(message(0, {cacheOnly: true}))).items.length, 0);
     assert.equal(f.requests.length, 1);
+});
+
+const truncatedResponse = () => ({ok: true, text: async () => JSON.stringify({choices: [{
+    message: {content: "", reasoning_content: "Reasoning used the output budget."}, finish_reason: "length"
+}]})});
+
+test("Ali hybrid DeepSeek disables hidden thinking for both page analysis and translation", async () => {
+    for (const endpoint of ["https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        "https://coding.dashscope.aliyuncs.com/v1",
+        "https://workspace.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"]) {
+        const f = fixture();
+        f.data.translationBaseUrl = endpoint;
+        f.data.translationModel = "deepseek-v4.1-flash";
+        f.hooks.fetch = ({payload}) => payload.enable_thinking !== false ? truncatedResponse() : undefined;
+        const result = await f.start().send(message());
+        assert.equal(result.ok, true, endpoint);
+        assert.equal(f.requests.length, 2);
+        assert.ok(f.requests.every((request) => request.payload.enable_thinking === false));
+        assert.ok(f.requests.every((request) => request.payload.thinking === undefined));
+    }
+});
+
+test("Ali-specific thinking switches are not sent to arbitrary proxies or non-hybrid models", async () => {
+    for (const [endpoint, model] of [
+        ["https://provider.invalid/v1", "deepseek-v4.1-flash"],
+        ["https://dashscope.aliyuncs.com.evil.example/v1", "deepseek-v4.1-flash"],
+        ["https://dashscope.aliyuncs.com/compatible-mode/v1", "deepseek-r1"],
+        ["https://dashscope.aliyuncs.com/compatible-mode/v1", "deepseek-v3"]
+    ]) {
+        const f = fixture();
+        f.data.translationBaseUrl = endpoint;
+        f.data.translationModel = model;
+        assert.equal((await f.start().send(message())).ok, true);
+        assert.ok(f.requests.every((request) => request.payload.enable_thinking === undefined));
+    }
+});
+
+test("legacy DeepSeek settings pointing to Ali use only the Ali thinking switch", async () => {
+    const f = fixture();
+    Object.assign(f.data, {translationProvider: "deepseek", translationModel: "deepseek-v4.1-flash",
+        translationBaseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1"});
+    assert.equal((await f.start().send(message())).ok, true);
+    assert.ok(f.requests.every((request) => request.payload.enable_thinking === false));
+    assert.ok(f.requests.every((request) => request.payload.thinking === undefined));
+});
+
+test("a truncated page plan gets one shared compact retry before translating all batches", async () => {
+    const f = fixture();
+    let contextAttempts = 0;
+    f.hooks.fetch = ({kind}) => kind === "context" && ++contextAttempts === 1 ? truncatedResponse() : undefined;
+    const worker = f.start();
+    const results = await Promise.all([0, 1, 2].map((index) => worker.send(message(index))));
+    assert.ok(results.every((result) => result.ok));
+    const requests = f.requests.filter((request) => request.kind === "context");
+    assert.equal(requests.length, 2);
+    assert.deepEqual(requests.map((request) => request.payload.max_tokens), [6000, 8000]);
+    assert.match(requests[1].system, /up to 16/);
+    assert.match(requests[1].system, /within 400 characters/);
+    assert.equal(f.requests.length, 5);
+});
+
+test("repeated context truncation is bounded, tagged as context, and never cached as a translation", async () => {
+    const f = fixture();
+    f.hooks.fetch = () => truncatedResponse();
+    const worker = f.start();
+    const results = await Promise.all([0, 1, 2].map((index) => worker.send(message(index))));
+    assert.ok(results.every((result) => result.ok === false));
+    assert.ok(results.every((result) => result.errors[0].phase === "context"));
+    assert.ok(results.every((result) => result.errors[0].code === "IMMERSIVE_CONTEXT_TRUNCATED"));
+    assert.equal(f.requests.length, 2);
+    assert.equal((await worker.send(message(0, {cacheOnly: true}))).items.length, 0);
+    assert.equal(f.requests.length, 2);
 });
 
 test("paid plans survive storage failure and are saved on manual retry without reanalysis", async () => {

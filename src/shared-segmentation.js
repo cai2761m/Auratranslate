@@ -273,7 +273,7 @@
 
     function splitCaptionCuesAtSentenceBoundaries(cues) {
         const result = [];
-        const sentenceEndPattern = /[.!?。！？]+["')\]]*(?=\s+|$)/g;
+
 
         for (const cue of Array.isArray(cues) ? cues : []) {
             const sourceText = Shared.normalizeSubtitleText(cue && cue.sourceText);
@@ -283,28 +283,7 @@
                 continue;
             }
 
-            const parts = [];
-            let sourceOffset = 0;
-            sentenceEndPattern.lastIndex = 0;
-            let match;
-            while ((match = sentenceEndPattern.exec(sourceText))) {
-                const endOffset = match.index + match[0].length;
-                const text = sourceText.slice(sourceOffset, endOffset).trim();
-                if (text) {
-                    parts.push({text, startOffset: sourceOffset, endOffset});
-                }
-                sourceOffset = endOffset;
-                while (/\s/.test(sourceText[sourceOffset] || "")) {
-                    sourceOffset += 1;
-                }
-            }
-            const remainder = sourceText.slice(sourceOffset).trim();
-            if (remainder) {
-                parts.push({text: remainder, startOffset: sourceOffset, endOffset: sourceText.length});
-            }
-            if (!parts.length) {
-                parts.push({text: sourceText, startOffset: 0, endOffset: sourceText.length});
-            }
+            const parts = captionSentences(sourceText);
 
             const durationMs = endMs - startMs;
             let previousPartEndMs = startMs;
@@ -326,7 +305,7 @@
                     startMs: partStartMs,
                     endMs: Math.max(partStartMs + 1, partEndMs),
                     sourceText: part.text,
-                    displaySourceText: Shared.formatDisplaySourceText(part.text),
+                    displaySourceText: part.text,
                     translatedText: "",
                     status: "pending"
                 });
@@ -415,7 +394,7 @@
             const displaySourceText =
                 rawDisplaySourceText &&
                 Shared.subtitleContentSignature(rawDisplaySourceText) === Shared.subtitleContentSignature(coveredSourceText)
-                    ? Shared.formatDisplaySourceText(rawDisplaySourceText)
+                    ? rawDisplaySourceText
                     : "";
             const group = {startId, endId};
             if (displaySourceText) {
@@ -469,7 +448,7 @@
                 startMs: Number(groupCues[0].startMs),
                 endMs: Number(groupCues[groupCues.length - 1].endMs),
                 sourceText,
-                displaySourceText: Shared.formatDisplaySourceText(safeDisplaySourceText),
+                displaySourceText: safeDisplaySourceText,
                 translatedText: "",
                 status: "pending"
             });
@@ -483,139 +462,148 @@
         return result;
     }
 
-    // Reading limits are measured in approximate display columns (CJK counts
-    // twice). Keep this separate from cue/cache identity: old translations can
-    // be paged locally without invalidating or resending paid work.
-    const CAPTION_SOURCE_COLUMNS = 120;
-    const CAPTION_TRANSLATION_COLUMNS = 96;
-    const displayPartCache = new WeakMap();
     const displayTimelineCache = new WeakMap();
+    const ABBREVIATION_RE = /\b(?:(?:mr|mrs|ms|dr|prof|sr|jr|st|vs|etc|e\.g|i\.e)|(?:[A-Za-z]\.)*[A-Za-z])\.$/i;
+    const SENTENCE_CLOSERS_RE = /["'”’）)\]]/;
+    const INCOMPLETE_SENTENCE_END_WORDS = new Set([
+        ...Shared.DISPLAY_PREPOSITION_WORDS, "a", "an", "the", "and", "or", "because", "if", "whether"
+    ]);
 
-    function captionCharacters(text) {
-        return Array.from(String(text || "").trim());
-    }
-
-    function captionCharacterWidth(character) {
-        return /[\u2e80-\ua4cf\uac00-\ud7ff\uf900-\ufaff\uff01-\uff60]|\p{Extended_Pictographic}/u.test(character) ? 2 : 1;
-    }
-
-    function captionTextWidth(text) {
-        return captionCharacters(text).reduce((sum, character) => sum + captionCharacterWidth(character), 0);
-    }
-
-    function captionPartCount(source, translation) {
-        const sourceWidth = captionTextWidth(source);
-        const translationWidth = captionTextWidth(translation);
-        if (sourceWidth <= CAPTION_SOURCE_COLUMNS && translationWidth <= CAPTION_TRANSLATION_COLUMNS) return 1;
-        // Leave room to move a cut to a word/clause boundary.
-        return Math.max(Math.ceil(sourceWidth / 100), Math.ceil(translationWidth / 80));
-    }
-
-    function splitCaptionText(text, count, maxColumns, fractions) {
-        const characters = captionCharacters(text);
-        const widths = [0];
-        for (const character of characters) widths.push(widths[widths.length - 1] + captionCharacterWidth(character));
-        const total = widths[characters.length];
+    // Only real sentence terminators qualify. Commas, conjunctions, duration
+    // and character counts are never output boundaries. Uncertain tails stay
+    // attached; appending a period would not make them complete sentences.
+    function captionSentences(value) {
+        const text = Shared.normalizeSubtitleText(value);
         const parts = [];
         let start = 0;
-        for (let part = 0; part < count; part += 1) {
-            const remaining = count - part;
-            let end = characters.length;
-            if (remaining > 1 && start < end) {
-                const target = fractions ? total * fractions[part] : widths[start] + (total - widths[start]) / remaining;
-                let bestScore = Infinity;
-                end = start + 1;
-                for (let index = start + 1; index <= characters.length; index += 1) {
-                    const width = widths[index] - widths[start];
-                    if (width > maxColumns) break;
-                    if (total - widths[index] > maxColumns * (remaining - 1)) continue;
-                    if (characters.length - index < Math.min(remaining - 1, characters.length - start - 1)) continue;
-                    const left = characters[index - 1];
-                    const right = characters[index] || "";
-                    const punctuation = /[.!?。！？,，;；:：、]/.test(left);
-                    const wordBoundary = /\s/.test(right);
-                    const wideBoundary = captionCharacterWidth(left) === 2 || (right && captionCharacterWidth(right) === 2);
-                    // Prefer clauses, then whole words. Character cuts only
-                    // handle unspaced scripts or a single oversized token.
-                    let penalty = punctuation ? 0 : wordBoundary ? 12 : wideBoundary ? 18 : 100;
-                    if (/[，。！？；：、.!?,;:\])）”’]/.test(right)) penalty += 80;
-                    if (wordBoundary) {
-                        const tail = characters.slice(Math.max(start, index - 20), index).join("");
-                        if (DANGLING_END_WORDS.has(lastSubtitleWord(tail))) penalty += 15;
-                        const nextWord = firstSubtitleWord(characters.slice(index, index + 20).join(""));
-                        if (Shared.DISPLAY_PREPOSITION_WORDS.has(nextWord)) penalty += 18;
-                        if (["and", "but", "because", "when", "while", "they", "we", "you"].includes(nextWord)) penalty -= 26;
-                    }
-                    const score = Math.abs(widths[index] - target) + penalty;
-                    if (score < bestScore) { bestScore = score; end = index; }
-                }
-            }
-            parts.push({text: characters.slice(start, end).join("").trim(), fraction: total ? widths[end] / total : (part + 1) / count});
+        for (let index = 0; index < text.length; index += 1) {
+            const mark = text[index];
+            if (!/[.!?。！？]/.test(mark)) continue;
+            if (mark === "." && (text[index + 1] === "." || text[index - 1] === "." ||
+                ABBREVIATION_RE.test(text.slice(start, index + 1)))) continue;
+            let end = index + 1;
+            while (/[!?。！？]/.test(text[end] || "") || SENTENCE_CLOSERS_RE.test(text[end] || "")) end += 1;
+            if (/[.!?]/.test(mark) && end < text.length && !/\s/.test(text[end])) continue;
+            const sentence = text.slice(start, end).trim();
+            if (!sentence) continue;
+            parts.push({text: sentence, endOffset: end, complete: !INCOMPLETE_SENTENCE_END_WORDS.has(lastSubtitleWord(sentence))});
             start = end;
+            index = end - 1;
         }
+        const tail = text.slice(start).trim();
+        if (tail) parts.push({text: tail, endOffset: text.length, complete: false});
         return parts;
     }
 
-    function timeCaptionParts(cue, sourceParts, translations) {
-        const duration = cue.endMs - cue.startMs;
+    function endsCaptionSentence(value) {
+        const parts = captionSentences(value);
+        return Boolean(parts.length && parts[parts.length - 1].complete);
+    }
+
+    function captionContinues(left, right, trustDisplayText) {
+        if (right.startMs - left.endMs > 1500 || left.status !== right.status) return false;
+        const raw = left.sourceText || "";
+        if (endsCaptionSentence(raw)) return false;
+        const lastWord = lastSubtitleWord(raw);
+        const nextWord = firstSubtitleWord(right.sourceText);
+        if (INCOMPLETE_SENTENCE_END_WORDS.has(lastWord) ||
+            ["them", "him", "her", "whether", "which", "whose"].includes(nextWord) ||
+            /^(?:and|or)\s+(?!i\b|we\b|you\b|he\b|she\b|they\b|it\b|there\b)/i.test(right.sourceText || "")) return true;
+        if (left.sentenceComplete || (trustDisplayText && endsCaptionSentence(left.displaySourceText))) return false;
+        // A translation ending in a comma still belongs to the next fragment.
+        // Legacy displaySourceText may contain periods invented by the old
+        // length splitter, so it is not evidence of a complete sentence.
+        return !left.translatedText || /[,，;；:：、]["'”’）)\]]*$/.test(left.translatedText.trim());
+    }
+
+    function joinIncompleteCaptionCues(cues, trustDisplayText = false) {
+        const result = [];
+        for (const cue of cues) {
+            const previous = result[result.length - 1];
+            if (!previous || !captionContinues(previous, cue, trustDisplayText)) {
+                result.push(cue);
+                continue;
+            }
+            const sourceText = joinSubtitleFragments(previous.sourceText, cue.sourceText, false);
+            result[result.length - 1] = {...previous, endMs: cue.endMs, sourceText,
+                displaySourceText: joinSubtitleFragments(previous.displaySourceText || previous.sourceText,
+                    cue.displaySourceText || cue.sourceText, true),
+                translatedText: joinSubtitleFragments(previous.translatedText, cue.translatedText, false),
+                sentenceComplete: Boolean(cue.sentenceComplete)};
+        }
+        return result;
+    }
+
+    function sourcePartsForSentences(source, sentences) {
+        if (Shared.subtitleContentSignature(source) !== Shared.subtitleContentSignature(sentences.map((part) => part.text).join(" "))) return null;
+        const characters = Array.from(source);
+        let cursor = 0;
+        return sentences.map((sentence) => {
+            const start = cursor;
+            let letters = 0;
+            const count = Array.from(Shared.subtitleContentSignature(sentence.text)).length;
+            while (cursor < characters.length && letters < count) {
+                letters += Array.from(Shared.subtitleContentSignature(characters[cursor])).length;
+                cursor += 1;
+            }
+            while (cursor < characters.length && !/[\p{L}\p{N}]/u.test(characters[cursor])) cursor += 1;
+            return characters.slice(start, cursor).join("").trim();
+        });
+    }
+
+    function sentenceCueParts(cue, allowModelPunctuation = false, translated = false) {
+        const raw = Shared.normalizeSubtitleText(cue.sourceText);
+        const proposed = Shared.normalizeSubtitleText(cue.displaySourceText);
+        const source = allowModelPunctuation && proposed &&
+            Shared.subtitleContentSignature(proposed) === Shared.subtitleContentSignature(raw) ? proposed : raw;
+        const sentences = captionSentences(source);
+        if (sentences.length < 2 || sentences.some((part) => !part.complete) || cue.endMs - cue.startMs < sentences.length) return [cue];
+        const translations = captionSentences(cue.translatedText);
+        // Bilingual output can only be split at corresponding complete
+        // sentences, never at proportional character offsets.
+        if (translated && cue.translatedText &&
+            (translations.length !== sentences.length || translations.some((part) => !part.complete))) return [cue];
+        const rawParts = sourcePartsForSentences(raw, sentences);
+        if (!rawParts) return [cue];
+        const displayParts = captionSentences(proposed);
+        if (translated && proposed && proposed !== source &&
+            (displayParts.length !== sentences.length || displayParts.some((part) => !part.complete))) return [cue];
         let startMs = cue.startMs;
-        return sourceParts.map((part, index) => {
-            const endMs = index === sourceParts.length - 1 ? cue.endMs :
-                Math.max(startMs + 1, Math.min(cue.endMs - (sourceParts.length - index - 1),
-                    cue.startMs + Math.round(duration * part.fraction)));
-            const result = {...cue, id: `${cue.id}:display:${index}`, startMs, endMs,
-                sourceText: part.text, displaySourceText: part.text,
-                translatedText: translations ? translations[index].text : ""};
+        return sentences.map((sentence, index) => {
+            const endMs = index === sentences.length - 1 ? cue.endMs : Math.max(startMs + 1,
+                Math.min(cue.endMs - (sentences.length - index - 1),
+                    cue.startMs + Math.round((cue.endMs - cue.startMs) * sentence.endOffset / source.length)));
+            const result = {...cue, id: `${cue.id}:sentence:${index}`, startMs, endMs,
+                sourceText: rawParts[index],
+                displaySourceText: translated && proposed && proposed !== source ? displayParts[index].text : sentence.text,
+                translatedText: translated && cue.translatedText ? translations[index].text : "",
+                sentenceComplete: true};
             startMs = endMs;
             return result;
         });
     }
 
-    function splitLongCaptionCues(cues) {
-        return (Array.isArray(cues) ? cues : []).flatMap((cue) => {
-            const count = Math.min(captionPartCount(cue.sourceText, ""), Math.max(1, Math.floor(cue.endMs - cue.startMs)));
-            if (count === 1) return [cue];
-            const parts = splitCaptionText(cue.sourceText, count, CAPTION_SOURCE_COLUMNS - 1);
-            return timeCaptionParts(cue, parts).map((part) => ({...part,
-                displaySourceText: Shared.formatDisplaySourceText(part.sourceText), status: "pending"}));
-        }).map((cue, index) => ({...cue, id: String(index)}));
-    }
-
-    function getCaptionDisplayParts(cue) {
-        const fields = [cue.sourceText, cue.displaySourceText, cue.translatedText, cue.startMs, cue.endMs, cue.status, cue.lastError];
-        const cached = displayPartCache.get(cue);
-        if (cached && fields.every((value, index) => value === cached.fields[index])) return cached.parts;
-        const source = cue.displaySourceText || cue.sourceText || "";
-        const translation = cue.translatedText || "";
-        const count = Math.min(captionPartCount(source, translation), Math.max(1, Math.floor(cue.endMs - cue.startMs)));
-        let parts = [cue];
-        if (count > 1) {
-            const sourceParts = splitCaptionText(source, count, CAPTION_SOURCE_COLUMNS);
-            if (sourceParts.some((part) => !part.text)) {
-                sourceParts.forEach((part, index) => { part.fraction = (index + 1) / count; });
-            }
-            // Legacy caches have no bilingual word alignment. Prefer nearby
-            // punctuation at matching proportions, estimating timing only
-            // within the original cue; never rewrite the stored translation.
-            const translations = splitCaptionText(translation, count, CAPTION_TRANSLATION_COLUMNS, sourceParts.map((part) => part.fraction));
-            parts = timeCaptionParts(cue, sourceParts, translations);
-        }
-        displayPartCache.set(cue, {fields, parts});
-        return parts;
+    function prepareSentenceCaptionCues(cues, useModelPunctuation = false) {
+        return joinIncompleteCaptionCues(Array.isArray(cues) ? cues : [], useModelPunctuation)
+            .flatMap((cue) => sentenceCueParts(cue, useModelPunctuation))
+            .map((cue, index) => ({...cue, id: String(index),
+                displaySourceText: useModelPunctuation ? cue.displaySourceText || cue.sourceText : cue.sourceText,
+                sentenceComplete: endsCaptionSentence(useModelPunctuation ? cue.displaySourceText || cue.sourceText : cue.sourceText)}));
     }
 
     function getCaptionDisplayCues(cues) {
-        const parts = cues.map(getCaptionDisplayParts);
+        const fields = cues.map((cue) => [cue, cue.id, cue.sourceText, cue.displaySourceText, cue.translatedText,
+            cue.startMs, cue.endMs, cue.status, cue.lastError, cue.sentenceComplete]);
         const cached = displayTimelineCache.get(cues);
-        if (cached && cached.parts.length === parts.length && parts.every((value, index) => value === cached.parts[index])) return cached.cues;
-        const result = parts.flat();
-        displayTimelineCache.set(cues, {parts, cues: result});
+        if (cached && fields.length === cached.fields.length && fields.every((values, index) =>
+            values.every((value, field) => value === cached.fields[index][field]))) return cached.cues;
+        const result = joinIncompleteCaptionCues(cues).flatMap((cue) => sentenceCueParts(cue, Boolean(cue.sentenceComplete), true));
+        displayTimelineCache.set(cues, {fields, cues: result});
         return result;
     }
 
     Object.assign(Shared, {
-        splitLongCaptionCues,
-        getCaptionDisplayParts,
+        prepareSentenceCaptionCues,
         getCaptionDisplayCues,
         mergeCaptionFragments,
         splitCaptionCuesAtSentenceBoundaries,

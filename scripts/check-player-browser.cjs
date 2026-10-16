@@ -203,11 +203,11 @@ async function main() {
             await handlePlayerControlAction("transcript");
             renderPlayerTranscript();
             updateOverlay();
-        }, JSON.parse(read("test/fixtures/long-caption.json")));
+        }, JSON.parse(read("test/fixtures/sentence-caption.json")));
         const requestCount = await page.evaluate(() => messages.length);
-        assert.equal(await page.locator(".ytbt-cue-row").count(), 2);
+        assert.equal(await page.locator(".ytbt-cue-row").count(), 3);
         await page.locator(".ytbt-cue-row").nth(1).click();
-        await page.waitForFunction(() => document.querySelector(".ytbt-en").textContent.startsWith("they try"));
+        await page.waitForFunction(() => document.querySelector(".ytbt-en").textContent === "The team can now make a decision.");
         const shortCaptionState = await page.evaluate(() => ({
             rows: [...document.querySelectorAll(".ytbt-cue-row")].map((row) => ({
                 source: row.querySelector(".ytbt-cue-source").textContent,
@@ -222,16 +222,26 @@ async function main() {
         assert.equal(shortCaptionState.source, shortCaptionState.rows[1].source);
         assert.equal(shortCaptionState.translation, shortCaptionState.rows[1].translation);
         assert.equal(shortCaptionState.cueCount, 1, "display splitting preserves the cached cue");
-        assert.ok(shortCaptionState.rows.every((row) => row.source.length <= 120 && row.translation.length <= 48));
+        assert.ok(shortCaptionState.rows.every((row) => row.source.endsWith(".") && row.translation.endsWith("。")));
         await page.locator(".ytbt-tools-panel").screenshot({path: path.join(screenshots, "player-short-captions.png")});
         await page.screenshot({path: path.join(screenshots, "player-short-captions-overlay.png")});
-        await page.locator(".ytbt-transcript-search").fill("预测");
+        await page.locator(".ytbt-transcript-search").fill("决定");
         assert.equal(await page.locator(".ytbt-cue-row").count(), 1);
         await page.locator(".ytbt-transcript-search").fill("");
         await page.setViewportSize({width: 390, height: 844});
         await page.waitForTimeout(300);
         await assertContained(page);
         await page.locator(".ytbt-tools-panel").screenshot({path: path.join(screenshots, "player-short-captions-mobile.png")});
+        await page.evaluate((cues) => {
+            state.cues = cues;
+            state.video.currentTime = 105;
+            renderPlayerTranscript();
+            updateOverlay();
+        }, JSON.parse(read("test/fixtures/incomplete-captions.json")));
+        assert.equal(await page.locator(".ytbt-cue-row").count(), 1);
+        assert.match(await page.locator(".ytbt-en").textContent(), /to help them make/);
+        assert.match(await page.locator(".ytbt-cue-source").textContent(), /longer and try/);
+        await page.locator(".ytbt-tools-panel").screenshot({path: path.join(screenshots, "player-complete-sentence-mobile.png")});
         assert.equal(await page.evaluate(() => messages.length), requestCount, "viewing short captions never requests translation");
         assert.deepEqual(errors, []);
         console.log(`Player browser checks passed; screenshots: ${screenshots}`);

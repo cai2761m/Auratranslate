@@ -2,6 +2,7 @@ import {useEffect, useRef} from "react";
 import {ModelRows} from "./ModelRows";
 import {ModelPicker} from "./ModelPicker";
 import {useModelCatalog} from "./useModelCatalog";
+import {Core} from "../shared/settings";
 
 export function ServiceDetail({
                                   service,
@@ -16,6 +17,7 @@ export function ServiceDetail({
         service?.id,
         service?.baseUrl || "",
         service?.apiKey || "",
+        service?.apiProtocol || "openai-compatible",
         !blocked,
     );
     const panel = useRef(null);
@@ -39,7 +41,7 @@ export function ServiceDetail({
                 <div className="service-detail-head">
                     <div>
                         <p className="section-kicker" id="detail-kind">
-                            OpenAI Compatible
+                            {Core.TRANSLATION_SERVICE_PROTOCOLS[service?.apiProtocol] || "OpenAI-compatible API"}
                         </p>
                         <h3 id="detail-name">{service?.name || ""}</h3>
                     </div>
@@ -83,7 +85,7 @@ export function ServiceDetail({
                             id="detail-base-url"
                             type="url"
                             autoComplete="off"
-                            placeholder="https://api.example.com/v1"
+                            placeholder={Core.API_PROTOCOL_DEFAULT_URLS[service?.apiProtocol] || "https://api.example.com/v1"}
                             value={service?.baseUrl || ""}
                             onChange={(event) => onChange({baseUrl: event.target.value})}
                         />
@@ -94,7 +96,7 @@ export function ServiceDetail({
                             id="detail-protocol"
                             type="text"
                             readOnly
-                            value={service?.apiProtocol || ""}
+                            value={Core.TRANSLATION_SERVICE_PROTOCOLS[service?.apiProtocol] || ""}
                         />
                     </label>
                 </div>

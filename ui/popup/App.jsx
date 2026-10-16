@@ -177,6 +177,15 @@ export function PopupApp() {
             );
     }
 
+    async function openVocabulary() {
+        try {
+            await api((done) => chrome.tabs.create({url: chrome.runtime.getURL("options/options.html#vocabulary")}, done));
+            window.close();
+        } catch (error) {
+            if (alive.current) setNotice({text: `无法打开生词本：${error.message}`, error: true});
+        }
+    }
+
     const s = settings || Core.DEFAULT_SETTINGS;
     const theme = Core.normalizeUiTheme(s.uiTheme);
     const {plan, service, model} = popupSelection(s);
@@ -378,6 +387,10 @@ export function PopupApp() {
                     {status.text}
                 </p>
             </section>
+            <button id="open-vocabulary" className="text-button vocabulary-shortcut" type="button"
+                    onClick={openVocabulary}>
+                <Icon name="book"/> 生词本
+            </button>
             <footer className="popup-footer">
                 <button
                     id="open-settings"

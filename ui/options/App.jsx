@@ -6,12 +6,16 @@ import {ServiceDialog} from "./ServiceDialog";
 import {ModelTestDialog} from "./ModelTestDialog";
 import {TranslationSettings} from "./TranslationSettings";
 import {GeneralSettings} from "./GeneralSettings";
+import {SelectionSettings} from "./SelectionSettings";
+import {Vocabulary} from "./Vocabulary";
 import {Icon} from "../shared/Icon";
 
 const PAGES = [
     ["translation-services", "翻译服务", "供应方与模型目录"],
     ["realtime-api", "实时字幕", "视频双语字幕"],
     ["immersive-api", "沉浸式翻译", "网页翻译"],
+    ["selection-settings", "划词翻译", "所选文字与上下文"],
+    ["vocabulary", "生词本", "收藏、笔记与学习状态"],
     ["general-settings", "通用设置", "外观与缓存"],
 ];
 const currentPage = () =>
@@ -45,6 +49,18 @@ export function OptionsApp() {
     }, []);
     useEffect(() => {
         document.title = `${PAGES.find(([id]) => id === page)[1]} · AuraTranslate 设置`;
+        const revealTab = () => {
+            const nav = document.querySelector(".sidebar-nav");
+            const tab = document.getElementById(`tab-${page}`);
+            if (!nav || !tab || nav.scrollWidth <= nav.clientWidth) return;
+            const bounds = nav.getBoundingClientRect(), selected = tab.getBoundingClientRect();
+            const offset = selected.left < bounds.left ? selected.left - bounds.left - 8
+                : selected.right > bounds.right ? selected.right - bounds.right + 8 : 0;
+            if (offset) nav.scrollBy?.({left: offset});
+        };
+        revealTab();
+        window.addEventListener("resize", revealTab);
+        return () => window.removeEventListener("resize", revealTab);
     }, [page]);
 
     function navigate(id, focus = false) {
@@ -139,7 +155,7 @@ export function OptionsApp() {
                                 onClick={() => navigate(id)}
                                 onKeyDown={(event) => navigateKey(event, index)}
                             >
-                                <Icon name={["services", "subtitles", "webpage", "settings"][index]}/>
+                                <Icon name={["services", "subtitles", "webpage", "translate", "book", "settings"][index]}/>
                                 <span className="sidebar-copy">
                   <span className="sidebar-title">{label}</span>
                   <span className="sidebar-desc">{desc}</span>
@@ -270,6 +286,9 @@ export function OptionsApp() {
                                     immersive
                                     hidden={page !== "immersive-api"}
                                 />
+                                <SelectionSettings settings={settings} update={update}
+                                                   hidden={page !== "selection-settings"} navigate={navigate}/>
+                                <Vocabulary hidden={page !== "vocabulary"} navigate={navigate}/>
                                 <GeneralSettings
                                     settings={settings}
                                     update={update}

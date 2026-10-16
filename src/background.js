@@ -3,11 +3,13 @@
 if (typeof importScripts === "function") {
     importScripts(
         "shared-settings.js",
+        "shared-api.js",
         "shared-runtime.js",
         "shared-text.js",
         "shared-captions.js",
         "shared-translation.js",
         "shared-segmentation.js",
+        "shared-vocabulary.js",
         "shared.js",
         "background-core.js",
         "background-subtitles.js",
@@ -16,13 +18,29 @@ if (typeof importScripts === "function") {
         "background-requests.js",
         "background-bing.js",
         "background-cache.js",
-        "background-summary.js"
+        "background-summary.js",
+        "background-vocabulary.js"
     );
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message) {
         return false;
+    }
+
+    if (message.type === "VOCABULARY" || message.type === "SELECTION_TRANSLATE") {
+        (message.type === "VOCABULARY" ? handleVocabulary(message) : handleSelectionTranslate(message, sender))
+            .then(sendResponse)
+            .catch((error) => sendResponse({ok: false, error: error?.message || String(error)}));
+        return true;
+    }
+
+    if (message.type === "OPEN_VOCABULARY") {
+        chrome.tabs.create({url: chrome.runtime.getURL("options/options.html#vocabulary")}, () => {
+            const error = chrome.runtime.lastError;
+            sendResponse(error ? {ok: false, error: error.message} : {ok: true});
+        });
+        return true;
     }
 
     if (message.type === "SUMMARIZE_VIDEO") {

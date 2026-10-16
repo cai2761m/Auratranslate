@@ -53,6 +53,33 @@ async function main() {
         assert.equal(await page.locator("#disabled-site-list li").count(), 0);
         await page.locator("#tab-general-settings").click();
         assert.equal(await page.locator("#fontScale").isVisible(), false);
+        await page.locator("#tab-translation-services").click();
+        for (const protocol of ["openai-responses", "anthropic", "gemini"]) {
+            await page.setViewportSize({width: 1280, height: 900});
+            await page.locator("#add-service").click();
+            assert.deepEqual(await page.locator("#service-protocol option").evaluateAll(
+                options => options.map(option => option.value)),
+                ["openai-compatible", "openai-responses", "anthropic", "gemini"]);
+            await page.locator("#service-name").fill(protocol);
+            await page.locator("#service-protocol").selectOption(protocol);
+            assert.ok(await page.locator("#service-base-url").inputValue());
+            await page.locator(".model-id").fill("demo-model");
+            for (const width of [1280, 320]) {
+                await page.setViewportSize({width, height: 900});
+                assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+                await page.screenshot({path: path.join(screenshots, protocol + "-" + width + ".png"), fullPage: true});
+            }
+            await page.locator("#save-service").click();
+            await page.locator("#detail-name").filter({hasText: protocol}).waitFor();
+            await page.locator("#detail-test-models").click();
+            await page.locator("#start-model-test").click();
+            await page.waitForFunction(() =>
+                document.querySelectorAll('.model-test-result[data-state="success"]').length === 1);
+            await page.locator("#close-model-test").click();
+            await page.locator("#edit-service").click();
+            assert.equal(await page.locator("#service-protocol").inputValue(), protocol);
+            await page.locator("#cancel-service").click();
+        }
         assert.deepEqual(errors, []);
         console.log("Refined settings browser checks passed (production bundles, mock storage, Chrome).");
     } finally {

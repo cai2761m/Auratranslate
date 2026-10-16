@@ -8,6 +8,7 @@ const paths = {
     arrow: "M5 12h14m-5-5 5 5-5 5",
     chevron: "m8 10 4 4 4-4",
     plus: "M12 5v14M5 12h14",
+    book: "M4 4h7c2 0 3 1 3 3v14c-1-1-2-2-4-2H4zM14 7c0-2 1-3 3-3h3v15h-3c-1 0-2 1-3 2",
     close: "m6 6 12 12M18 6 6 18",
     // Appearance: follow the system, pinned light, pinned dark.
     "theme-system": "M3 5h18v11H3zM8 20h8M12 16v4",

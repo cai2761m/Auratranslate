@@ -7,7 +7,7 @@ const SUMMARY_MAX_CHARACTERS = 120000;
 async function handleSummarizeVideo(message) {
     const settings = await storageGet(Core.DEFAULT_SETTINGS);
     const config = Core.resolveTranslationConfig(settings);
-    const endpoint = config.apiStyle === "gemini" ? config.generateContentUrl : config.chatCompletionsUrl;
+    const endpoint = Core.translationEndpoint(config);
     if (!config.apiKey || !endpoint || !config.model) {
         throw new Error("请先在扩展设置中配置字幕翻译服务和模型。");
     }

@@ -3,7 +3,8 @@ import {Modal} from "../shared/Modal";
 import {Core, storageGet, storageSet} from "../shared/settings";
 
 const keyFor = (service, model) =>
-    "modelTestResult:" + JSON.stringify([service.id, service.baseUrl, model.id]);
+    "modelTestResult:" + JSON.stringify([service.id, service.baseUrl, model.id,
+        ...(service.apiProtocol && service.apiProtocol !== "openai-compatible" ? [service.apiProtocol] : [])]);
 
 export function ModelTestDialog({service: source, onClose}) {
     const [service] = useState(() => ({
@@ -83,23 +84,12 @@ export function ModelTestDialog({service: source, onClose}) {
                 const started = performance.now();
                 let record;
                 try {
-                    const response = await fetch(
-                        Core.buildChatCompletionsUrl(service.baseUrl),
-                        {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                ...(service.apiKey.trim()
-                                    ? {Authorization: `Bearer ${service.apiKey.trim()}`}
-                                    : {}),
-                            },
-                            body: JSON.stringify({
-                                model: model.id,
-                                messages: [{role: "user", content: "Reply with OK."}],
-                            }),
-                            signal: controller.signal,
-                        },
-                    );
+                    const config = Core.resolveTranslationConfig({
+                        translationServices: [{...service, models: [model]}],
+                        translationServiceId: service.id, translationModelId: model.id
+                    });
+                    const request = Core.buildApiRequest(config, {userText: "Reply with OK.", mode: "test"});
+                    const response = await fetch(request.url, {...request.options, signal: controller.signal});
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     let payload;
                     try {
@@ -108,18 +98,10 @@ export function ModelTestDialog({service: source, onClose}) {
                         if (controller.signal.aborted) throw error;
                         throw new Error("返回非 JSON 数据");
                     }
-                    if (payload?.error) throw new Error("接口返回错误");
-                    const content = payload?.choices?.[0]?.message?.content;
-                    if (
-                        !(typeof content === "string" && content.trim()) &&
-                        !(
-                            Array.isArray(content) &&
-                            content.some(
-                                (part) => typeof part?.text === "string" && part.text.trim(),
-                            )
-                        )
-                    )
-                        throw new Error("未返回有效回复");
+                    const {content, finishReason} = Core.parseApiResponse(config, payload);
+                    if (finishReason === "length" || finishReason === "MAX_TOKENS")
+                        throw new Error("回复超过输出上限");
+                    if (!content) throw new Error("未返回有效回复");
                     record = {state: "success", message: ""};
                 } catch (error) {
                     record = {

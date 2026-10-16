@@ -520,7 +520,7 @@ test("LLM sentence segmentation ignores display text that changes source words",
   const segmented = Core.applySentenceSegmentationGroups(cues, groups);
 
   assert.equal(groups[0].displaySourceText, undefined);
-  assert.equal(segmented[0].displaySourceText, "Keep every word.");
+  assert.equal(segmented[0].displaySourceText, "Keep every word");
 });
 
 test("findCueAtTime returns the active cue by binary search", () => {

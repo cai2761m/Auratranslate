@@ -1,4 +1,5 @@
 @import url("../ui/shared/theme.css");
+.vocabulary-shortcut { margin: 0 auto 8px; justify-content: center; }
 
 html, body {
     width: 400px;

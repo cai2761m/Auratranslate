@@ -494,8 +494,7 @@ function updateOverlay() {
     }
 
     const timeMs = getCurrentTimeMs();
-    const originalCue = Core.findCueAtTime(state.cues, timeMs);
-    const cue = originalCue && Core.findCueAtTime(Core.getCaptionDisplayParts(originalCue), timeMs);
+    const cue = Core.findCueAtTime(Core.getCaptionDisplayCues(state.cues), timeMs);
     const hasCue = Boolean(cue);
     const statusText = hasCue ? "" : state.statusText;
 

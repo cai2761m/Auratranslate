@@ -61,6 +61,7 @@ export function hydrateSettings(saved) {
         fontScale: Core.normalizeFontScale(saved.fontScale),
         immersiveDisabledSites: Core.normalizeDisabledSites(saved.immersiveDisabledSites),
         uiTheme: Core.normalizeUiTheme(saved.uiTheme),
+        selectionToolbar: Core.normalizeSelectionToolbar(saved.selectionToolbar),
     });
 }
 
@@ -83,6 +84,7 @@ export function settingsPatch(settings) {
         "immersiveTranslationModelId",
         "translationJsonResponse",
         "immersiveDeepContextEnabled",
+        "selectionTranslationEnabled",
         "llmSentenceSegmentationEnabled",
         "asrCorrectionEnabled",
         "showOriginalTechnicalTerms",
@@ -109,6 +111,7 @@ export function settingsPatch(settings) {
         fontScale: Core.normalizeFontScale(s.fontScale),
         immersiveDisabledSites: Core.normalizeDisabledSites(s.immersiveDisabledSites),
         uiTheme: Core.normalizeUiTheme(s.uiTheme),
+        selectionToolbar: Core.normalizeSelectionToolbar(s.selectionToolbar),
         subtitleTranslationMode:
             s.subtitleTranslationMode === "full" ? "full" : "economy",
         subtitleLookAheadMinutes: Number(s.subtitleLookAheadMinutes || 2),

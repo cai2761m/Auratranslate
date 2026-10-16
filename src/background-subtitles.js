@@ -29,9 +29,7 @@ async function handleSegmentSubtitles(message) {
     }
 
     const endpointUrl =
-        translationConfig.apiStyle === "gemini"
-            ? translationConfig.generateContentUrl
-            : translationConfig.chatCompletionsUrl;
+        Core.translationEndpoint(translationConfig);
     if (!endpointUrl || !translationConfig.model) {
         throw new Error(`${translationConfig.providerLabel} base URL or model is not configured.`);
     }
@@ -48,6 +46,7 @@ async function handleSegmentSubtitles(message) {
         translationConfig.model,
         sourceLanguage,
         Core.SENTENCE_SEGMENTATION_VERSION,
+        "complete-sentences-v1",
         settings.cacheVersion || "1"
     ].join("|"))}`;
     const cached = await storageGet({[cacheKey]: null});
@@ -183,9 +182,7 @@ async function handleTranslateBatch(message) {
     const translationConfig = Core.resolveTranslationConfig(settings);
 
     const endpointUrl =
-        translationConfig.apiStyle === "gemini"
-            ? translationConfig.generateContentUrl
-            : translationConfig.chatCompletionsUrl;
+        Core.translationEndpoint(translationConfig);
     const cues = Array.isArray(message.cues) ? message.cues : [];
     const legacyCacheKeyParts = [
         message.videoId || "",

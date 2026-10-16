@@ -136,7 +136,7 @@ function preparedCaptionCacheKey(videoId, trackFingerprint) {
         settings.llmSentenceSegmentationEnabled ? "llm" : "local"
     ];
     if (settings.llmSentenceSegmentationEnabled) {
-        parts.push(config.provider, config.apiStyle === "gemini" ? config.generateContentUrl : config.chatCompletionsUrl,
+        parts.push(config.provider, Core.translationEndpoint(config),
             config.model, Core.SENTENCE_SEGMENTATION_VERSION);
     }
     return PREPARED_CAPTION_CACHE_PREFIX + Core.fingerprintText(JSON.stringify(parts));
@@ -184,6 +184,7 @@ async function persistPreparedCaptionCues(cues, videoId, trackFingerprint, token
         cues: cues.map((cue) => ({
             id: String(cue.id), startMs: cue.startMs, endMs: cue.endMs,
             sourceText: cue.sourceText, displaySourceText: cue.displaySourceText || "",
+            ...(cue.sentenceComplete ? {sentenceComplete: true} : {}),
             ...(cue.pendingWindow ? {pendingWindow: cue.pendingWindow} : {})
         }))
     };
@@ -254,14 +255,15 @@ async function prepareCaptionCues(rawCues, videoId, trackFingerprint, token, sou
         return;
     }
 
-    const merged = Core.splitLongCaptionCues(Core.mergeCaptionFragments(rawCues));
+    const merged = Core.mergeCaptionFragments(rawCues);
     if (!merged.length) {
         setStatus(`${sourceLabel || "字幕轨道"}没有可用的字幕内容。`);
         return;
     }
 
     const preparedCues = state.settings.llmSentenceSegmentationEnabled
-        ? makeIncrementalCaptionCues(Core.splitCaptionCuesAtSentenceBoundaries(merged)) : merged;
+        ? makeIncrementalCaptionCues(Core.splitCaptionCuesAtSentenceBoundaries(merged))
+        : Core.prepareSentenceCaptionCues(merged);
     // Persist the raw remainder too: refresh can resume without fetching the
     // track again, while completed windows retain their exact cue identities.
     await persistPreparedCaptionCues(preparedCues, videoId, trackFingerprint, token);
@@ -333,11 +335,11 @@ function ensureCaptionPreparation() {
                 if (backoffMs) applyApiBackoff(error.message, backoffMs);
                 // A failed window falls back once, without replaying an ambiguous
                 // segmentation request. Other windows remain eligible for later work.
-                prepared = input.map(({pendingWindow, ...cue}) => cue);
+                prepared = Core.prepareSentenceCaptionCues(input.map(({pendingWindow, ...cue}) => cue));
                 setStatus(`当前片段智能断句失败，使用本地断句：${simplifyTranslationError(error.message)}`);
             }
             if (!isCurrentCaptionLoad(videoId, trackFingerprint, token)) return;
-            prepared = Core.splitLongCaptionCues(prepared).map((cue, index) => ({...cue, id: `${windowId}:${index}`}));
+            prepared = Core.prepareSentenceCaptionCues(prepared, true).map((cue, index) => ({...cue, id: `${windowId}:${index}`}));
             const nextCues = state.cues.filter((cue) => cue.pendingWindow !== windowId).concat(prepared)
                 .sort((a, b) => a.startMs - b.startMs);
             await persistPreparedCaptionCues(nextCues, videoId, trackFingerprint, token);

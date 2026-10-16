@@ -1,0 +1,29 @@
+[
+  {
+    "id": "fragment-1",
+    "startMs": 98000,
+    "endMs": 105000,
+    "sourceText": "but I think our mer will give people uh confidence or some darkness too to help",
+    "displaySourceText": "But I think our mer will give people uh confidence or some darkness too to help.",
+    "translatedText": "但我认为我们的模型会给人信心，也让他们看到一些阴暗之处，",
+    "status": "translated"
+  },
+  {
+    "id": "fragment-2",
+    "startMs": 105000,
+    "endMs": 111000,
+    "sourceText": "them make the real decisions [music] whether to tune the radio a little longer",
+    "displaySourceText": "Them make the real decisions [music] whether to tune the radio a little longer.",
+    "translatedText": "帮助他们做出真正的决定：[音乐]是再调一会儿收音机，",
+    "status": "translated"
+  },
+  {
+    "id": "fragment-3",
+    "startMs": 111000,
+    "endMs": 119000,
+    "sourceText": "and try to find out the [music] uh broadcasting there or just abandon in the problem.",
+    "displaySourceText": "And try to find out the [music] uh broadcasting there or just abandon in the problem.",
+    "translatedText": "试着找到那边的广播，还是干脆放弃这个问题。",
+    "status": "translated"
+  }
+]

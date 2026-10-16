@@ -5,14 +5,24 @@
     const Shared = typeof module !== "undefined" && module.exports ? {} : root.YTBTShared;
     if (typeof module !== "undefined" && module.exports) {
         require("./shared-settings.js")(Shared);
+        require("./shared-api.js")(Shared);
         require("./shared-runtime.js")(Shared);
         require("./shared-text.js")(Shared);
         require("./shared-captions.js")(Shared);
         require("./shared-translation.js")(Shared);
         require("./shared-segmentation.js")(Shared);
+        require("./shared-vocabulary.js")(Shared);
     }
     const api = {
         DEFAULT_SETTINGS: Shared.DEFAULT_SETTINGS,
+        SELECTION_TOOLBAR_ACTIONS: Shared.SELECTION_TOOLBAR_ACTIONS,
+        normalizeSelectionToolbar: Shared.normalizeSelectionToolbar,
+        VOCABULARY_STORAGE_KEY: Shared.VOCABULARY_STORAGE_KEY,
+        VOCABULARY_MAX_ENTRIES: Shared.VOCABULARY_MAX_ENTRIES,
+        SELECTION_MAX_CHARS: Shared.SELECTION_MAX_CHARS,
+        vocabularySourceUrl: Shared.vocabularySourceUrl,
+        normalizeVocabularyEntry: Shared.normalizeVocabularyEntry,
+        vocabularyIdentity: Shared.vocabularyIdentity,
         FONT_SCALE_MIN: Shared.FONT_SCALE_MIN,
         FONT_SCALE_MAX: Shared.FONT_SCALE_MAX,
         FONT_SCALE_STEP: Shared.FONT_SCALE_STEP,
@@ -26,6 +36,14 @@
         DEEPSEEK_BASE_URL: Shared.DEEPSEEK_BASE_URL,
         GEMINI_BASE_URL: Shared.GEMINI_BASE_URL,
         TRANSLATION_SERVICE_PROTOCOLS: Shared.TRANSLATION_SERVICE_PROTOCOLS,
+        API_PROTOCOL_DEFAULT_URLS: Shared.API_PROTOCOL_DEFAULT_URLS,
+        protocolApiStyle: Shared.protocolApiStyle,
+        buildProtocolEndpoint: Shared.buildProtocolEndpoint,
+        translationEndpoint: Shared.translationEndpoint,
+        buildApiRequest: Shared.buildApiRequest,
+        parseApiResponse: Shared.parseApiResponse,
+        buildModelsRequest: Shared.buildModelsRequest,
+        parseModelsPage: Shared.parseModelsPage,
         MERGE_VERSION: Shared.MERGE_VERSION,
         SENTENCE_SEGMENTATION_VERSION: Shared.SENTENCE_SEGMENTATION_VERSION,
         DEFAULT_CACHE_MAX_ITEMS: Shared.DEFAULT_CACHE_MAX_ITEMS,
@@ -48,8 +66,7 @@
         parseGoogleDriveTranscriptItems: Shared.parseGoogleDriveTranscriptItems,
         findYouTubeTranscriptParams: Shared.findYouTubeTranscriptParams,
         mergeCaptionFragments: Shared.mergeCaptionFragments,
-        splitLongCaptionCues: Shared.splitLongCaptionCues,
-        getCaptionDisplayParts: Shared.getCaptionDisplayParts,
+        prepareSentenceCaptionCues: Shared.prepareSentenceCaptionCues,
         getCaptionDisplayCues: Shared.getCaptionDisplayCues,
         splitCaptionCuesAtSentenceBoundaries: Shared.splitCaptionCuesAtSentenceBoundaries,
         parseSentenceSegmentationContent: Shared.parseSentenceSegmentationContent,

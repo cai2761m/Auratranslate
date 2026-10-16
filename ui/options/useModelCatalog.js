@@ -1,7 +1,7 @@
 import {useEffect, useRef, useState} from "react";
 import {Core} from "../shared/settings";
 
-export function useModelCatalog(identity, baseUrl, apiKey, enabled = true) {
+export function useModelCatalog(identity, baseUrl, apiKey, apiProtocol = "openai-compatible", enabled = true) {
     const [busy, setBusy] = useState(false);
     const [status, setStatus] = useState("");
     const [ids, setIds] = useState(null);
@@ -14,7 +14,7 @@ export function useModelCatalog(identity, baseUrl, apiKey, enabled = true) {
             active.current?.abort();
             active.current = null;
         };
-    }, [identity, baseUrl, apiKey, enabled]);
+    }, [identity, baseUrl, apiKey, apiProtocol, enabled]);
 
     async function fetchModels() {
         if (active.current || !enabled) return;
@@ -28,27 +28,24 @@ export function useModelCatalog(identity, baseUrl, apiKey, enabled = true) {
         setBusy(true);
         setStatus("正在获取可用模型…");
         try {
-            const response = await fetch(Core.buildModelsUrl(baseUrl), {
-                headers: apiKey.trim()
-                    ? {Authorization: `Bearer ${apiKey.trim()}`}
-                    : {},
-                signal: controller.signal,
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            const payload = await response.json();
-            if (active.current !== controller) return;
-            const models = payload?.data || payload?.models || [];
-            const next = [
-                ...new Set(
-                    (Array.isArray(models) ? models : [])
-                        .map((model) =>
-                            String(model?.id || model?.name || "")
-                                .trim()
-                                .replace(/^models\//, ""),
-                        )
-                        .filter(Boolean),
-                ),
-            ];
+            const service = {baseUrl, apiKey, apiProtocol};
+            const collected = [];
+            const seenCursors = new Set();
+            let cursor = "";
+            do {
+                const request = Core.buildModelsRequest(service, cursor);
+                const response = await fetch(request.url, {...request.options, signal: controller.signal});
+                if (!response.ok) throw new Error("HTTP " + response.status);
+                const payload = await response.json();
+                if (active.current !== controller || controller.signal.aborted) return;
+                const page = Core.parseModelsPage(service, payload);
+                collected.push(...page.ids);
+                cursor = page.nextCursor;
+                if (cursor && (seenCursors.has(cursor) || seenCursors.size >= 100))
+                    throw new Error("模型列表分页异常，请手工添加模型");
+                if (cursor) seenCursors.add(cursor);
+            } while (cursor);
+            const next = [...new Set(collected)];
             setIds(next.length ? next : null);
             setStatus(
                 next.length

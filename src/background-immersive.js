@@ -7,12 +7,13 @@ const failedImmersiveContexts = new Map();
 const IMMERSIVE_CONTEXT_CACHE_ID = "__pageContext";
 
 async function handleImmersiveTranslate(message) {
+    const selection = message.type === "SELECTION_TRANSLATE";
     const settings = await storageGet(Core.DEFAULT_SETTINGS);
-    const preferences = message.preferences || settings;
+    const preferences = selection ? settings : message.preferences || settings;
     const targetLanguage = preferences.immersiveTargetLanguage || settings.targetLanguage || Core.DEFAULT_SETTINGS.targetLanguage;
     const sourceLanguage = preferences.immersiveSourceLanguage || "auto";
     const service = preferences.immersiveTranslationService || "ai";
-    const pageContext = service === "ai" &&
+    const pageContext = !selection && service === "ai" &&
         (preferences.immersiveDeepContextEnabled ?? settings.immersiveDeepContextEnabled) !== false
         ? Core.normalizeImmersivePageContext(message.pageContext) : null;
     const translationConfig = Core.resolveTranslationConfig(settings, "immersive");
@@ -23,21 +24,21 @@ async function handleImmersiveTranslate(message) {
             apiKey: "",
             model: "",
             chatCompletionsUrl: "",
-            generateContentUrl: ""
+            generateContentUrl: "",
+            responsesUrl: "",
+            messagesUrl: ""
         });
     }
 
     const endpointUrl =
-        translationConfig.apiStyle === "gemini"
-            ? translationConfig.generateContentUrl
-            : translationConfig.chatCompletionsUrl;
+        Core.translationEndpoint(translationConfig);
     const cues = (Array.isArray(message.items) ? message.items : [])
         .map((item) => ({
             id: item && item.id != null ? String(item.id) : "",
-            sourceText: item && item.formattedText
+            sourceText: selection ? String(item && item.sourceText || "").replace(/\s+/g, " ").trim() : item && item.formattedText
                 ? String(item.formattedText).replace(/\s+/g, " ").trim()
                 : Core.normalizeSubtitleText(item && item.sourceText),
-            plainText: Core.normalizeSubtitleText(item && item.sourceText),
+            plainText: selection ? String(item && item.sourceText || "").replace(/\s+/g, " ").trim() : Core.normalizeSubtitleText(item && item.sourceText),
             hasFormatting: Boolean(item && item.formattedText),
             contextText: typeof (item && item.contextText) === "string" ? item.contextText.slice(0, 1800) : ""
         }))
@@ -55,17 +56,17 @@ async function handleImmersiveTranslate(message) {
     // Stable text IDs survive DOM reordering, changed batch boundaries and
     // repeated headings in the page outline. Do not include credentials or the
     // URL fragment; keep different pages and translation profiles isolated.
-    const cacheKey = `ytbt:immersive:${await immersiveFingerprint(JSON.stringify([
+    const cacheKey = `ytbt:${selection ? "selection" : "immersive"}:${await immersiveFingerprint(JSON.stringify([
         String(message.pageUrl || "").split("#")[0],
         translationConfig.provider, endpointUrl, translationConfig.model,
-        sourceLanguage, targetLanguage, settings.cacheVersion || "1", "immersive-v1",
+        sourceLanguage, targetLanguage, settings.cacheVersion || "1", selection ? "selection-v1" : "immersive-v1",
         ...(pageContext ? ["deep-context-v1", pageContext] : [])
     ]))}`;
     const identities = await Promise.all(cues.map(async (cue) => ({
         // Identical short text can mean different things under different headings.
         // Deep-context results must include local semantic context in their identity.
-        ...cue, cacheId: await immersiveFingerprint(pageContext ? JSON.stringify([cue.sourceText, cue.contextText]) : cue.sourceText),
-        plainId: await immersiveFingerprint(pageContext ? JSON.stringify([cue.plainText, cue.contextText]) : cue.plainText)
+        ...cue, cacheId: await immersiveFingerprint(pageContext || selection ? JSON.stringify([cue.sourceText, cue.contextText]) : cue.sourceText),
+        plainId: await immersiveFingerprint(pageContext || selection ? JSON.stringify([cue.plainText, cue.contextText]) : cue.plainText)
     })));
     const uniqueCues = new Map(identities.map((cue) => [cue.cacheId, {...cue, id: cue.cacheId}]));
     const cache = await storageGet({[cacheKey]: {items: {}}});
@@ -115,7 +116,7 @@ async function handleImmersiveTranslate(message) {
             cacheKey, translationConfig, targetLanguage, sourceLanguage,
             asrCorrectionEnabled: false,
             cues: missing,
-            mode: "immersive",
+            mode: selection ? "selection" : "immersive",
             pageContextPlan,
             translateCues: builtInProvider === "off" ? undefined : (request, retain) =>
                 translateImmersiveBuiltIn(request, builtInProvider, retain),
@@ -146,6 +147,7 @@ async function handleImmersiveTranslate(message) {
     return {
         type: "IMMERSIVE_TRANSLATE_RESULT",
         ok: true,
+        ...(selection ? {sourceLanguage, targetLanguage} : {}),
         items: identities.filter((cue) => results.has(cue.cacheId)).map((cue) => ({
             ...results.get(cue.cacheId), id: cue.id
         })),

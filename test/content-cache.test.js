@@ -660,7 +660,7 @@ test("merged window cue identities survive refresh, seeks, and mode changes", as
   });
   await settle(page);
   const done = page.api.state.cues.filter((cue) => cue.status === "translated");
-  assert.equal(done.length, 4);
+  assert.equal(done.length, 12, "complete sentences in each model group get separate stable identities");
   assert.equal(new Set(page.api.state.cues.map((cue) => cue.id)).size, page.api.state.cues.length);
   const refreshed = loadContent(storage, translations, { settings: { subtitleTranslationMode: "economy" } });
   refreshed.api.state.video = { currentTime: 300 };
@@ -685,7 +685,7 @@ test("legacy complete snapshots remain readable without repaying for segmentatio
   assert.deepEqual(viewCues(refreshed), viewCues(first));
 });
 
-test("oversized local and AI groups are shortened before translation and reused on refresh", async () => {
+test("long complete local and AI sentences stay intact before translation and on refresh", async () => {
   for (const llmSentenceSegmentationEnabled of [false, true]) {
     const storage = sharedStorage();
     const translations = new Map();
@@ -697,8 +697,8 @@ test("oversized local and AI groups are shortened before translation and reused 
     page.api.resetVideoState(payload.videoId, payload.captionTracks[0], fingerprint, null);
     await page.api.prepareCaptionCues([raw], payload.videoId, fingerprint, page.api.state.loadingToken, "Test captions");
     await settle(page);
-    assert.ok(page.api.state.cues.length > 1);
-    assert.ok(page.calls.paid.flatMap((call) => call.cues).every((cue) => cue.sourceText.length <= 120));
+    assert.equal(page.api.state.cues.length, 1);
+    assert.deepEqual(page.calls.paid.flatMap((call) => call.cues.map((cue) => cue.sourceText)), [raw.sourceText]);
     assert.equal(page.api.state.cues.map((cue) => cue.sourceText).join(" "), raw.sourceText);
     const refreshed = loadContent(storage, translations, {settings});
     await refreshed.api.handlePlayerResponse(payload);
@@ -723,7 +723,7 @@ test("legacy long caption snapshots still hydrate and display locally without pa
   await refreshed.api.handlePlayerResponse(playerResponse());
   await settle(refreshed);
   assert.equal(refreshed.api.state.cues.length, 1, "stored translation identity must remain intact");
-  assert.ok(Core.getCaptionDisplayCues(refreshed.api.state.cues).length > 1);
+  assert.equal(Core.getCaptionDisplayCues(refreshed.api.state.cues).length, 1);
   assert.equal(refreshed.calls.fetch.length, 0);
   assert.equal(refreshed.calls.segmentation.length, 0);
   assert.equal(refreshed.calls.paid.length, 0);

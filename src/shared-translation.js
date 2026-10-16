@@ -81,7 +81,7 @@
         return unescapeJsonishString(fragment.slice(start));
     }
 
-    function parseJsonishTranslationItems(content) {
+    function parseJsonishTranslationItems(content, normalizeText = Shared.normalizeSubtitleText) {
         const raw = String(content || "");
         const items = [];
         const itemRe = /\{[\s\S]*?"id"\s*:\s*"?([^",}\]\s]+)"?[\s\S]*?\}/g;
@@ -89,7 +89,7 @@
         while ((match = itemRe.exec(raw))) {
             const fragment = match[0];
             const id = String(match[1] || "").trim();
-            const translatedText = Shared.normalizeSubtitleText(
+            const translatedText = normalizeText(
                 extractJsonishStringProperty(fragment, "translatedText") ||
                 extractJsonishStringProperty(fragment, "translation") ||
                 extractJsonishStringProperty(fragment, "text") ||
@@ -111,12 +111,13 @@
         return items;
     }
 
-    function parseDeepSeekTranslationContent(content) {
+    function parseDeepSeekTranslationContent(content, {preservePlainText = false} = {}) {
+        const normalizeText = preservePlainText ? (value) => typeof value === "string" ? value.trim() : "" : Shared.normalizeSubtitleText;
         let parsed;
         try {
             parsed = parseLooseJsonContent(content);
         } catch (error) {
-            const recovered = parseJsonishTranslationItems(content);
+            const recovered = parseJsonishTranslationItems(content, normalizeText);
             if (recovered.length) {
                 return recovered;
             }
@@ -127,7 +128,7 @@
         if (Array.isArray(parsed)) {
             for (const item of parsed) {
                 const id = item && item.id != null ? String(item.id) : "";
-                const translatedText = Shared.normalizeSubtitleText(
+                const translatedText = normalizeText(
                     item && (item.translatedText || item.translation || item.text || item.zh)
                 );
                 const displaySourceText = Shared.formatDisplaySourceText(
@@ -155,12 +156,12 @@
                 : null;
 
         if (list) {
-            return parseDeepSeekTranslationContent(list);
+            return parseDeepSeekTranslationContent(list, {preservePlainText});
         }
 
         for (const [id, value] of Object.entries(parsed)) {
             if (typeof value === "string") {
-                const translatedText = Shared.normalizeSubtitleText(value);
+                const translatedText = normalizeText(value);
                 if (translatedText) {
                     items.push({id: String(id), translatedText});
                 }

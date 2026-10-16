@@ -13,6 +13,7 @@ test("background segments subtitles before translation and reuses its cache", as
     llmSentenceSegmentationEnabled: true
   });
   let fetchCount = 0;
+  let segmentationPrompt = "";
   const chrome = {
     runtime: {
       onMessage: {
@@ -49,8 +50,9 @@ test("background segments subtitles before translation and reuses its cache", as
     AbortController,
     chrome,
     console,
-    fetch: async () => {
+    fetch: async (_url, request) => {
       fetchCount += 1;
+      segmentationPrompt = JSON.parse(request.body).messages[0].content;
       return {
         ok: true,
         status: 200,
@@ -120,5 +122,8 @@ test("background segments subtitles before translation and reuses its cache", as
   );
   assert.equal(second.cached, true);
   assert.equal(fetchCount, 1);
+  assert.match(segmentationPrompt, /Sentence completeness always takes priority/);
+  assert.match(segmentationPrompt, /no character or duration limit/);
+  assert.match(segmentationPrompt, /Never invent a period/);
   assert.ok(Object.keys(storage).some((key) => key.startsWith("ytbt:segments:")));
 });

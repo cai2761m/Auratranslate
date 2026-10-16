@@ -53,7 +53,7 @@ async function checkFloatingControl(browser, screenshots) {
     await page.screenshot({ path: path.join(screenshots, "floating-light.png"), animations: "disabled" });
     await control.hover();
     assert.equal(await control.evaluate((el) => getComputedStyle(el, "::before").animationName), "ytbt-aurora-drift");
-    await page.waitForFunction(() => getComputedStyle(document.querySelector(".ytbt-immersive-tab"), "::after").opacity === "1");
+    assert.equal(await control.evaluate((el) => getComputedStyle(el, "::after").content), "none");
     await page.screenshot({ path: path.join(screenshots, "floating-hover.png"), animations: "disabled" });
     await page.mouse.move(10, 10);
     await page.evaluate(() => document.body.classList.add("dark"));
@@ -83,10 +83,11 @@ async function checkFloatingControl(browser, screenshots) {
     await theme("dark");
     await button.focus();
     assert.equal(await button.evaluate((el) => getComputedStyle(el).outlineStyle), "solid");
+    assert.equal(await control.evaluate((el) => getComputedStyle(el, "::after").content), "none");
     await page.keyboard.press("Enter");
     assert.equal(await button.getAttribute("aria-busy"), "true");
     assert.equal(await panel.isVisible(), true);
-    await page.waitForFunction(() => getComputedStyle(document.querySelector(".ytbt-immersive-tab"), "::after").visibility === "hidden");
+    assert.equal(await control.evaluate((el) => getComputedStyle(el, "::after").content), "none");
     assert.equal(await button.evaluate((el) => getComputedStyle(el, "::before").animationName), "ytbt-immersive-spin");
     await page.screenshot({ path: path.join(screenshots, "floating-translating.png"), animations: "disabled" });
     await page.evaluate(() => {

@@ -131,34 +131,6 @@
     transition: box-shadow 120ms ease;
 }
 
-/* The action hint is separate from live progress; neither opens by itself. */
-.ytbt-immersive-tab::after {
-    content: attr(data-ytbt-label);
-    position: absolute;
-    top: 50%;
-    right: calc(100% + 12px);
-    padding: 9px 13px;
-    border: 1px solid var(--ytbt-ball-border);
-    border-radius: 12px;
-    background: var(--ytbt-ball-background);
-    color: var(--ytbt-ball-foreground);
-    box-shadow: 0 4px 18px var(--ytbt-ball-shadow);
-    font: 400 12px/1.7 "Segoe UI", "Microsoft YaHei UI", sans-serif;
-    white-space: pre;
-    text-align: left;
-    pointer-events: none;
-    opacity: 0;
-    visibility: hidden;
-    transform: translate(4px, -50%);
-    transition: opacity 160ms ease, transform 160ms ease, visibility 160ms;
-}
-
-.ytbt-immersive-tab:not([data-ytbt-has-status="true"]):not([data-ytbt-dismiss-open="true"]):not(.ytbt-immersive-dragging):is(:hover, :focus-within)::after {
-    opacity: 1;
-    visibility: visible;
-    transform: translate(0, -50%);
-}
-
 .ytbt-immersive-ball {
     all: initial;
     position: relative;

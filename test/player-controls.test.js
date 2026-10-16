@@ -236,14 +236,14 @@ test("transcript searches both languages, seeks, highlights, and does not call A
     assert.deepEqual(f.calls, []);
 });
 
-test("long cached captions share short parts across the list, seeking and overlay without AI calls", async (t) => {
+test("cached paragraphs split only into complete sentences shared by the list and overlay", async (t) => {
     const f = fixture(t);
-    const cue = {...require("./fixtures/long-caption.json")};
+    const cue = {...require("./fixtures/sentence-caption.json")};
     f.win.state.cues = [cue];
     const original = JSON.stringify(cue);
     await f.win.handlePlayerControlAction("transcript");
     f.win.renderPlayerTranscript();
-    const parts = Core.getCaptionDisplayParts(cue);
+    const parts = Core.getCaptionDisplayCues([cue]);
     assert.ok(parts.length > 1);
     const rows = [...f.win.document.querySelectorAll(".ytbt-cue-row")];
     assert.equal(rows.length, parts.length);
@@ -255,16 +255,34 @@ test("long cached captions share short parts across the list, seeking and overla
     assert.equal(f.$(".ytbt-en").textContent, parts[1].displaySourceText);
     assert.equal(f.$(".ytbt-cn").textContent, parts[1].translatedText);
     const search = f.$(".ytbt-transcript-search");
-    search.value = "预测";
+    search.value = "决定";
     search.dispatchEvent(new f.win.Event("input", {bubbles: true}));
     assert.equal(f.win.document.querySelectorAll(".ytbt-cue-row").length, 1);
     assert.equal(JSON.stringify(cue), original);
     assert.deepEqual(f.calls, []);
     cue.translatedText = "好";
-    const unevenParts = Core.getCaptionDisplayParts(cue);
+    const unevenParts = Core.getCaptionDisplayCues([cue]);
     f.win.state.video.currentTime = unevenParts.at(-1).startMs / 1000;
     f.win.updateOverlay();
-    assert.equal(f.$(".ytbt-cn").textContent, "", "an empty finished part must not claim translation is pending");
+    assert.equal(unevenParts.length, 1, "uncertain bilingual alignment remains intact");
+    assert.equal(f.$(".ytbt-cn").textContent, "好");
+});
+
+test("cached screenshot fragments are displayed together without altering translations or calling AI", async (t) => {
+    const f = fixture(t);
+    const cues = require("./fixtures/incomplete-captions.json").map((cue) => ({...cue}));
+    f.win.state.cues = cues;
+    const original = JSON.stringify(cues);
+    await f.win.handlePlayerControlAction("transcript");
+    f.win.state.video.currentTime = 105;
+    f.win.renderPlayerTranscript();
+    f.win.updateOverlay();
+    assert.equal(f.win.document.querySelectorAll(".ytbt-cue-row").length, 1);
+    assert.match(f.$(".ytbt-en").textContent, /to help them make/);
+    assert.match(f.$(".ytbt-cn").textContent, /帮助他们/);
+    assert.equal(f.$(".ytbt-cue-row").getAttribute("aria-current"), "true");
+    assert.equal(JSON.stringify(cues), original);
+    assert.deepEqual(f.calls, []);
 });
 
 test("opening summary only checks cache; explicit generation is reused on reopen", async (t) => {

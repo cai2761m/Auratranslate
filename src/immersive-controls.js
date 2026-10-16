@@ -446,7 +446,6 @@
                         : state.translated ? "显示网页译文" : "翻译当前网页";
             button.setAttribute("aria-label", label);
             button.setAttribute("aria-busy", String(mode === "translating"));
-            state.ball.dataset.ytbtLabel = `${label}\n拖动调整位置`;
         }
     }
 
@@ -488,7 +487,6 @@
             panel.textContent = text;
         }
         panel.hidden = !text || !state.pointerOverControl || state.ball?.hidden || Boolean(state.dismissMenu && !state.dismissMenu.hidden);
-        if (state.ball) state.ball.dataset.ytbtHasStatus = String(Boolean(text));
         positionStatusPanel();
     }
 

@@ -249,7 +249,8 @@ function isGeminiProvider() {
 }
 
 function isCustomOpenAiProvider() {
-    return currentTranslationConfig().provider === "custom";
+    const config = currentTranslationConfig();
+    return config.provider === "custom" || ["responses", "anthropic"].includes(config.apiStyle);
 }
 
 function currentBatchSize() {
@@ -399,8 +400,6 @@ function updateProgressStatus() {
 function hasApiKey() {
     const config = Core.resolveTranslationConfig(state.settings);
     const endpointUrl =
-        config.apiStyle === "gemini"
-            ? config.generateContentUrl
-            : config.chatCompletionsUrl;
+        Core.translationEndpoint(config);
     return Boolean(config.apiKey && endpointUrl && config.model);
 }

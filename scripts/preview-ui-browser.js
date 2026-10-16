@@ -70,18 +70,19 @@
         { once: true },
       );
     });
+    const pathname = new URL(String(url), location.href).pathname;
+    const reply = pathname.endsWith("/models")
+      ? {data: [{id: "demo-fast"}, {id: "demo-quality"}, {id: "demo-new"}]}
+      : pathname.endsWith(":generateContent")
+        ? {candidates: [{content: {parts: [{text: "OK"}]}, finishReason: "STOP"}]}
+        : pathname.endsWith("/messages")
+          ? {content: [{type: "text", text: "OK"}], stop_reason: "end_turn"}
+          : pathname.endsWith("/responses")
+            ? {status: "completed", output: [{type: "message", content: [{type: "output_text", text: "OK"}]}]}
+            : {choices: [{message: {content: "OK"}}]};
     return {
       ok: true,
-      json: async () =>
-        String(url).endsWith("/models")
-          ? {
-              data: [
-                { id: "demo-fast" },
-                { id: "demo-quality" },
-                { id: "demo-new" },
-              ],
-            }
-          : { choices: [{ message: { content: "OK" } }] },
+      json: async () => reply,
     };
   };
 })();

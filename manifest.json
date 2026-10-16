@@ -40,11 +40,13 @@
     "service_worker": "src/background.js",
     "scripts": [
       "src/shared-settings.js",
+      "src/shared-api.js",
       "src/shared-runtime.js",
       "src/shared-text.js",
       "src/shared-captions.js",
       "src/shared-translation.js",
       "src/shared-segmentation.js",
+      "src/shared-vocabulary.js",
       "src/shared.js",
       "src/background-core.js",
       "src/background-subtitles.js",
@@ -54,6 +56,7 @@
       "src/background-bing.js",
       "src/background-cache.js",
       "src/background-summary.js",
+      "src/background-vocabulary.js",
       "src/background.js"
     ]
   },
@@ -65,11 +68,13 @@
       ],
       "js": [
         "src/shared-settings.js",
+        "src/shared-api.js",
         "src/shared-runtime.js",
         "src/shared-text.js",
         "src/shared-captions.js",
         "src/shared-translation.js",
         "src/shared-segmentation.js",
+        "src/shared-vocabulary.js",
         "src/shared.js",
         "src/content-core.js",
         "src/content-captions.js",
@@ -91,11 +96,13 @@
       ],
       "js": [
         "src/shared-settings.js",
+        "src/shared-api.js",
         "src/shared-runtime.js",
         "src/shared-text.js",
         "src/shared-captions.js",
         "src/shared-translation.js",
         "src/shared-segmentation.js",
+        "src/shared-vocabulary.js",
         "src/shared.js",
         "src/content-core.js",
         "src/content-captions.js",
@@ -116,11 +123,13 @@
       ],
       "js": [
         "src/shared-settings.js",
+        "src/shared-api.js",
         "src/shared-runtime.js",
         "src/shared-text.js",
         "src/shared-captions.js",
         "src/shared-translation.js",
         "src/shared-segmentation.js",
+        "src/shared-vocabulary.js",
         "src/shared.js",
         "src/drive.js"
       ],
@@ -133,11 +142,13 @@
       ],
       "js": [
         "src/shared-settings.js",
+        "src/shared-api.js",
         "src/shared-runtime.js",
         "src/shared-text.js",
         "src/shared-captions.js",
         "src/shared-translation.js",
         "src/shared-segmentation.js",
+        "src/shared-vocabulary.js",
         "src/shared.js",
         "src/immersive-core.js",
         "src/immersive-controls.js",
@@ -150,6 +161,23 @@
         "src/immersive.css"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": [
+        "src/shared-settings.js",
+        "src/shared-api.js",
+        "src/shared-runtime.js",
+        "src/shared-text.js",
+        "src/shared-captions.js",
+        "src/shared-translation.js",
+        "src/shared-segmentation.js",
+        "src/shared-vocabulary.js",
+        "src/shared.js",
+        "src/selection.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
     }
   ],
   "web_accessible_resources": [

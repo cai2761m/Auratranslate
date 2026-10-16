@@ -6,6 +6,31 @@
 })(globalThis, function (Shared) {
     "use strict";
 
+    const SELECTION_TOOLBAR_ACTIONS = Object.freeze([
+        {id: "translate", label: "翻译", title: "翻译所选文字", path: "M4 5h12M10 3v2M7 5c0 5 3 8 7 10M13 5c0 5-3 8-8 11M14 20l4-10 4 10M15.5 17h5"},
+        {id: "copy", label: "复制", title: "复制所选文字", path: "M9 9h11v12H9zM6 16H4V3h11v3"},
+        {id: "vocabulary", label: "生词本", title: "打开生词本", path: "M12 5c-3-2-6-2-9-1v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15"},
+        {id: "dismiss", label: "关闭", title: "关闭划词工具栏", path: "m6 6 12 12M18 6 6 18"},
+    ].map(Object.freeze));
+    const DEFAULT_SELECTION_TOOLBAR = Object.freeze({
+        actions: Object.freeze(["translate"]), size: "compact", showLabels: false, position: "below",
+    });
+
+    function normalizeSelectionToolbar(value) {
+        const source = value && typeof value === "object" ? value : {};
+        const known = new Set(SELECTION_TOOLBAR_ACTIONS.map(action => action.id));
+        const actions = [...new Set((Array.isArray(source.actions) ? source.actions : DEFAULT_SELECTION_TOOLBAR.actions)
+            .filter(id => known.has(id)))];
+        // Keep a translation entry even when settings were imported from an older or malformed backup.
+        if (!actions.includes("translate")) actions.unshift("translate");
+        return {
+            actions,
+            size: ["compact", "regular", "comfortable"].includes(source.size) ? source.size : "compact",
+            showLabels: source.showLabels === true,
+            position: source.position === "above" ? "above" : "below",
+        };
+    }
+
     const DEFAULT_SETTINGS = Object.freeze({
         // User-managed provider list. Each entry owns its own credential, endpoint,
         // protocol and model catalog; the subtitle and immersive pages only pick
@@ -35,6 +60,8 @@
         immersiveAutoTranslate: false,
         immersiveSiteRules: {},
         immersiveDisabledSites: [],
+        selectionTranslationEnabled: true,
+        selectionToolbar: DEFAULT_SELECTION_TOOLBAR,
         targetLanguage: "zh-CN",
         sourceLanguage: "en",
         fontScale: 1,
@@ -56,8 +83,7 @@
         translationCacheMaxItems: 2000
     });
 
-    // Legacy provider defaults remain available to resolve settings saved by
-    // older versions; the current settings UI exposes a generic compatible API.
+    // Legacy provider defaults remain available to resolve older settings.
     const DEEPSEEK_MODEL = "deepseek-v4-flash";
     const FONT_SCALE_MIN = 0.3;
     const FONT_SCALE_MAX = 3;
@@ -97,11 +123,12 @@
     const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
     const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 
-    // Every service entry speaks the OpenAI-compatible protocol today; the map
-    // exists so the settings UI can label the value and new protocols can be
-    // added without touching the option pages.
+    // Wire formats supported by both translation and the provider tools.
     const TRANSLATION_SERVICE_PROTOCOLS = Object.freeze({
-        "openai-compatible": "OpenAI-compatible API"
+        "openai-compatible": "OpenAI-compatible API",
+        "openai-responses": "OpenAI Responses",
+        "anthropic": "Anthropic Messages",
+        "gemini": "Google Gemini"
     });
     const DEFAULT_SERVICE_PROTOCOL = "openai-compatible";
 
@@ -191,7 +218,7 @@
     }
 
     // Rewrites a legacy Gemini endpoint to its OpenAI-compatible sibling. The
-    // settings form has been compatible-only since the provider list existed.
+    // Preserve the compatible endpoint chosen by the original list migration.
     function openAiCompatibleBaseUrl(baseUrl, provider) {
         const raw = String(baseUrl || "").trim();
         if (provider !== "gemini") return raw;
@@ -227,7 +254,7 @@
         return {
             id: String(source.id || "").trim() || `service-${index + 1}`,
             name: String(source.name || "").trim(),
-            apiProtocol: TRANSLATION_SERVICE_PROTOCOLS[source.apiProtocol]
+            apiProtocol: Object.hasOwn(TRANSLATION_SERVICE_PROTOCOLS, source.apiProtocol)
                 ? source.apiProtocol
                 : DEFAULT_SERVICE_PROTOCOL,
             baseUrl: String(source.baseUrl || "").trim(),
@@ -388,8 +415,9 @@
             };
         }
 
-        const translationServiceId =
-            findServiceById(services, source.translationServiceId) ? String(source.translationServiceId).trim() : "";
+        const requestedServiceId = String(source.translationServiceId || "").trim();
+        const translationServiceId = findServiceById(services, requestedServiceId)
+            ? requestedServiceId : requestedServiceId ? services[0].id : "";
         const immersiveTranslationServiceId = findServiceById(services, source.immersiveTranslationServiceId)
             ? String(source.immersiveTranslationServiceId).trim()
             : "";
@@ -425,15 +453,21 @@
             }
             if (service) {
                 const endpoint = service.baseUrl;
+                const apiStyle = Shared.protocolApiStyle(service.apiProtocol);
+                const model = pickModelId(service, useDedicated ? source.immersiveTranslationModelId : source.translationModelId);
+                const requestUrl = Shared.buildProtocolEndpoint(endpoint, service.apiProtocol, model);
                 return {
-                    provider: "custom",
+                    provider: apiStyle === "chat-completions" ? "custom" : service.apiProtocol,
                     providerLabel: service.name || "自定义服务",
-                    apiStyle: "chat-completions",
+                    apiProtocol: service.apiProtocol,
+                    apiStyle,
                     apiKey: service.apiKey,
                     baseUrl: endpoint,
-                    chatCompletionsUrl: buildChatCompletionsUrl(endpoint),
-                    generateContentUrl: "",
-                    model: pickModelId(service, useDedicated ? source.immersiveTranslationModelId : source.translationModelId),
+                    chatCompletionsUrl: apiStyle === "chat-completions" ? requestUrl : "",
+                    generateContentUrl: apiStyle === "gemini" ? requestUrl : "",
+                    responsesUrl: apiStyle === "responses" ? requestUrl : "",
+                    messagesUrl: apiStyle === "anthropic" ? requestUrl : "",
+                    model,
                     useJsonResponseFormat: useDedicated
                         ? source.immersiveTranslationJsonResponse !== false
                         : source.translationJsonResponse !== false,
@@ -504,6 +538,8 @@
     }
 
     Object.assign(Shared, {
+        SELECTION_TOOLBAR_ACTIONS,
+        normalizeSelectionToolbar,
         normalizeSiteHostname,
         normalizeDisabledSites,
         DEFAULT_SETTINGS,

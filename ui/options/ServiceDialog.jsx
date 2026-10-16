@@ -20,6 +20,7 @@ export function ServiceDialog({service, onSave, onClose}) {
         service?.id || "new",
         draft.baseUrl,
         draft.apiKey,
+        draft.apiProtocol,
     );
     const edit = (key, value) => setDraft((old) => ({...old, [key]: value}));
     const field = (key) => ({
@@ -72,17 +73,23 @@ export function ServiceDialog({service, onSave, onClose}) {
                         id="service-base-url"
                         type="url"
                         autoComplete="off"
-                        placeholder="https://api.example.com/v1"
+                        placeholder={Core.API_PROTOCOL_DEFAULT_URLS[draft.apiProtocol] || "https://api.example.com/v1"}
                         {...field("baseUrl")}
                     />
                 </label>
                 <label className="field">
                     <span>API 协议</span>
-                    <select id="service-protocol" {...field("apiProtocol")}>
-                        {Object.keys(Core.TRANSLATION_SERVICE_PROTOCOLS).map((protocol) => (
-                            <option key={protocol}>{protocol}</option>
+                    <select id="service-protocol" value={draft.apiProtocol} onChange={(event) => {
+                        const apiProtocol = event.target.value;
+                        setDraft(old => ({...old, apiProtocol,
+                            baseUrl: !old.baseUrl.trim() || old.baseUrl.trim() === Core.API_PROTOCOL_DEFAULT_URLS[old.apiProtocol]
+                                ? Core.API_PROTOCOL_DEFAULT_URLS[apiProtocol] || "" : old.baseUrl}));
+                    }}>
+                        {Object.entries(Core.TRANSLATION_SERVICE_PROTOCOLS).map(([protocol, label]) => (
+                            <option key={protocol} value={protocol}>{label}</option>
                         ))}
                     </select>
+                    <small>按服务商的接口格式选择；兼容接口与原生接口使用不同的协议。</small>
                 </label>
                 <label className="field">
                     <span>密钥</span>

@@ -1,0 +1,8 @@
+{
+  "id": "complete-sentences",
+  "startMs": 29000,
+  "endMs": 41000,
+  "sourceText": "Many companies invest in AI. The team can now make a decision. It can improve the model.",
+  "translatedText": "许多公司投资人工智能。团队现在可以做出决定。它可以改进模型。",
+  "status": "translated"
+}

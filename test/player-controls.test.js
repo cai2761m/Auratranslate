@@ -8,6 +8,17 @@ const Core = require("../src/shared.js");
 const read = (file) => fs.readFileSync(path.join(__dirname, "..", file), "utf8");
 const tick = () => new Promise((resolve) => setImmediate(resolve));
 
+// React tracks input values on the DOM node, so tests must assign through the
+// prototype setter before dispatching the native event React listens for.
+function setFieldValue(element, value) {
+    const window = element.ownerDocument.defaultView;
+    const prototype = element.tagName === "SELECT"
+        ? window.HTMLSelectElement.prototype
+        : window.HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(prototype, "value").set.call(element, value);
+    element.dispatchEvent(new window.Event(element.tagName === "SELECT" ? "change" : "input", {bubbles: true}));
+}
+
 function fixture(t, settings = {}) {
     const dom = new JSDOM('<div id="movie_player" class="html5-video-player"><video></video><div class="ytp-right-controls"><button>Settings</button></div></div>', {
         url: "https://www.youtube.com/watch?v=one", runScripts: "outside-only", pretendToBeVisual: true
@@ -41,7 +52,7 @@ function fixture(t, settings = {}) {
         }
     };
     const manifest = JSON.parse(read("manifest.json"));
-    for (const file of manifest.content_scripts[0].js.filter((file) => file.startsWith("src/content-"))) {
+    for (const file of manifest.content_scripts[0].js.filter((file) => file.startsWith("src/content-") || file.startsWith("src/ui/"))) {
         const source = read(file).split("// --- Bootstrap ---")[0];
         vm.runInContext(source, dom.getInternalVMContext(), {filename: file});
     }
@@ -64,6 +75,7 @@ test("player button survives replacement without duplicate menus and follows ext
     const f = fixture(t);
     f.win.updatePlayerControls();
     assert.equal(f.win.document.querySelectorAll(".ytbt-player-button").length, 1);
+    assert.equal(f.$(".ytbt-player-button img").src, "https://extension.invalid/icons/icon-32.png");
     const replacement = f.win.document.createElement("div");
     replacement.className = "ytp-right-controls";
     f.$(".ytp-right-controls").replaceWith(replacement);
@@ -90,8 +102,7 @@ test("turning off player subtitles restores native caption styles without toggli
     f.win.startNativeCaptionBlocker();
     assert.equal(captions.style.display, "none");
     const toggle = f.$('[data-setting="subtitleEnabled"]');
-    toggle.checked = false;
-    toggle.dispatchEvent(new f.win.Event("change", {bubbles: true}));
+    toggle.click();
     await tick();
     assert.equal(f.stored.subtitleEnabled, false);
     assert.equal(f.win.state.overlay.hidden, true);
@@ -188,9 +199,7 @@ test("style edits persist and immediately update the subtitle overlay", async (t
     f.$(".ytbt-player-button").click();
     f.$('[data-action="style"]').click();
     const scale = f.$('[data-setting="fontScale"]');
-    scale.value = "1.5";
-    scale.dispatchEvent(new f.win.Event("input", {bubbles: true}));
-    scale.dispatchEvent(new f.win.Event("change", {bubbles: true}));
+    setFieldValue(scale, "1.5");
     await tick();
     assert.equal(f.stored.fontScale, 1.5);
     assert.equal(f.win.state.overlay.style.getPropertyValue("--ytbt-font-scale"), "1.5");
@@ -226,8 +235,7 @@ test("transcript searches both languages, seeks, highlights, and does not call A
     f.win.renderPlayerTranscript();
     assert.equal(f.win.document.querySelectorAll(".ytbt-cue-row").length, 2);
     const search = f.$(".ytbt-transcript-search");
-    search.value = "第二";
-    search.dispatchEvent(new f.win.Event("input", {bubbles: true}));
+    setFieldValue(search, "第二");
     f.$(".ytbt-cue-row").click();
     assert.equal(f.win.state.video.currentTime, 10);
     f.win.renderPlayerTranscript();
@@ -255,8 +263,7 @@ test("cached paragraphs split only into complete sentences shared by the list an
     assert.equal(f.$(".ytbt-en").textContent, parts[1].displaySourceText);
     assert.equal(f.$(".ytbt-cn").textContent, parts[1].translatedText);
     const search = f.$(".ytbt-transcript-search");
-    search.value = "决定";
-    search.dispatchEvent(new f.win.Event("input", {bubbles: true}));
+    setFieldValue(search, "决定");
     assert.equal(f.win.document.querySelectorAll(".ytbt-cue-row").length, 1);
     assert.equal(JSON.stringify(cue), original);
     assert.deepEqual(f.calls, []);

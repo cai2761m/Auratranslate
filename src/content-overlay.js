@@ -28,14 +28,8 @@ function ensureOverlay() {
         overlay.setAttribute("aria-live", "polite");
         overlay.dataset.ytbtVersion = chrome.runtime.getManifest().version;
         overlay.style.setProperty("--ytbt-font-scale", String(state.settings.fontScale));
-        overlay.innerHTML = [
-            '<div class="ytbt-lines">',
-            '  <div class="ytbt-cn"></div>',
-            '  <div class="ytbt-en"></div>',
-            "</div>",
-            '<div class="ytbt-status"></div>'
-        ].join("");
         state.overlay = overlay;
+        mountOverlayView(overlay);
         state.overlayParts = {
             cn: overlay.querySelector(".ytbt-cn"),
             en: overlay.querySelector(".ytbt-en"),
@@ -481,10 +475,43 @@ function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
 }
 
+function mountOverlayView(overlay) {
+    const ui = globalThis.AuraContentUI;
+    if (!ui || typeof ui.mountOverlay !== "function") {
+        // Interaction harnesses can load the content controllers without the
+        // React bundle (no DOM implementation); keep the plain fallback markup
+        // so overlay parts still exist for those unit-level tests.
+        overlay.innerHTML = [
+            '<div class="ytbt-lines">',
+            '  <div class="ytbt-cn"></div>',
+            '  <div class="ytbt-en"></div>',
+            "</div>",
+            '<div class="ytbt-status"></div>'
+        ].join("");
+        state.overlayView = null;
+        return;
+    }
+
+    state.overlayView = ui.mountOverlay(overlay, {cn: "", en: "", status: ""});
+}
+
+function renderOverlayText(cn, en, status) {
+    if (state.overlayView) {
+        state.overlayView.update({cn, en, status});
+        return;
+    }
+    const parts = state.overlayParts;
+    if (!parts) {
+        return;
+    }
+    if (parts.cn.textContent !== cn) parts.cn.textContent = cn;
+    if (parts.en.textContent !== en) parts.en.textContent = en;
+    if (parts.status.textContent !== status) parts.status.textContent = status;
+}
+
 function updateOverlay() {
     const overlay = state.overlay;
-    const parts = state.overlayParts;
-    if (!overlay || !parts) {
+    if (!overlay || (!state.overlayView && !state.overlayParts)) {
         return;
     }
 
@@ -504,19 +531,19 @@ function updateOverlay() {
     overlay.classList.toggle("ytbt-loading", hasCue && cue.status !== "translated");
 
     if (hasCue) {
-        parts.cn.textContent = cue.translatedText || (cue.status === "translated" ? "" : fallbackTextForCue(cue));
-        parts.en.textContent = cue.displaySourceText || cue.sourceText || "";
+        renderOverlayText(
+            cue.translatedText || (cue.status === "translated" ? "" : fallbackTextForCue(cue)),
+            cue.displaySourceText || cue.sourceText || "",
+            statusText
+        );
 
         if ((cue.status === "pending" || cue.status === "unprepared") && Date.now() - state.lastUrgentScheduleAt > URGENT_RESCHEDULE_MS) {
             state.lastUrgentScheduleAt = Date.now();
             scheduleTranslations(timeMs, true);
         }
     } else {
-        parts.cn.textContent = "";
-        parts.en.textContent = "";
+        renderOverlayText("", "", statusText);
     }
-
-    parts.status.textContent = statusText;
 }
 
 

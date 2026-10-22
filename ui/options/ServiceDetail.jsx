@@ -41,7 +41,7 @@ export function ServiceDetail({
                 <div className="service-detail-head">
                     <div>
                         <p className="section-kicker" id="detail-kind">
-                            {Core.TRANSLATION_SERVICE_PROTOCOLS[service?.apiProtocol] || "OpenAI-compatible API"}
+                            {Core.TRANSLATION_SERVICE_PROTOCOLS[service?.apiProtocol] || "OpenAI Completion"}
                         </p>
                         <h3 id="detail-name">{service?.name || ""}</h3>
                     </div>

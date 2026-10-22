@@ -38,6 +38,8 @@ async function checkFloatingControl(browser, screenshots) {
         },
       };
     });
+    await page.addScriptTag({ path: path.resolve("src/ui/react-vendor.js") });
+    await page.addScriptTag({ path: path.resolve("src/ui/content-ui.js") });
     await page.addScriptTag({ path: path.resolve("src/immersive-controls.js") });
     await page.evaluate(() => window.YTBTImmersive.mountControls());
     const control = page.locator(".ytbt-immersive-tab");

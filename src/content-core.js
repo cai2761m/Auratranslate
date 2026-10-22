@@ -75,6 +75,7 @@ var state = {
     statusText: "",
     overlay: null,
     overlayParts: null,
+    overlayView: null,
     lastDriveOverlayGeometryAt: 0,
     lastDriveOverlayGeometrySignature: "",
     overlayDrag: {

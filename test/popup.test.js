@@ -62,7 +62,10 @@ test("popup restores language, concrete AI model and saved modes, and expands mo
   assert.equal($("#target-language").value, "zh-CN");
   assert.equal($("#translation-service optgroup").label, "自定义供应商");
   assert.equal($("#translation-model").value, "my-model");
-  assert.equal($("#version").textContent, "v0.3.12");
+  assert.equal($(".popup-header .brand"), null, "the header carries no product lockup");
+  assert.equal($("h1.sr-only").textContent, "AuraTranslate", "the outline keeps the product name");
+  assert.equal($(".current-page"), null, "the page chip is gone from the translation screen");
+  assert.equal($("#status").textContent, "", "the idle hint no longer takes a line");
   assert.equal($("#more-panel").hidden, true);
   click($("#more-toggle"));
   assert.equal($("#more-panel").hidden, false);

@@ -27,7 +27,7 @@ AuraTranslate 是一款开源浏览器扩展，适合阅读外文文章、观看
 | 生词本 | 收藏原文、译文、上下文和来源，搜索词条、保存笔记、标记已掌握，导入和导出备份。 |
 | 视频字幕 | 将 YouTube 已有英文字幕、Google Drive 可访问的转写稿翻译为简体或繁体中文。 |
 | 字幕列表与总结 | 在 YouTube 中搜索字幕、点击时间跳转、跟随播放，按需生成总结。 |
-| 自选翻译服务 | 接入 OpenAI-compatible、OpenAI Responses、Anthropic Messages 或 Gemini API，管理模型目录，为网页和字幕选择不同服务。 |
+| 自选翻译服务 | 接入 OpenAI Completion、OpenAI Responses、Anthropic Messages 或 Gemini API，管理模型目录，为网页和字幕选择不同服务。 |
 | 本地缓存 | 复用保存在浏览器中的译文与总结。 |
 
 ## 快速开始
@@ -71,12 +71,12 @@ git clone https://github.com/cai2761m/auratranslate.git
 
 | API 协议 | 官方服务基础地址 | 生成接口 |
 | --- | --- | --- |
-| [OpenAI-compatible API](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create) | 服务商提供的兼容接口基础地址 | `/chat/completions` |
+| [OpenAI Completion](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create) | 服务商提供的兼容接口基础地址 | `/chat/completions` |
 | [OpenAI Responses](https://developers.openai.com/api/docs/guides/migrate-to-responses) | `https://api.openai.com/v1` | `/responses` |
 | [Anthropic Messages](https://platform.claude.com/docs/en/api/messages/create) | `https://api.anthropic.com/v1` | `/messages` |
 | [Google Gemini](https://ai.google.dev/api/generate-content) | `https://generativelanguage.googleapis.com/v1beta` | `/models/{model}:generateContent` |
 
-使用中转或本地服务时，填写该服务自己的基础地址并选择它支持的协议。兼容接口地址如 `https://api.example.com/v1`，会请求 `https://api.example.com/v1/chat/completions`；此地址仅作示例。也接受完整的生成接口地址。获取模型列表与测试模型同样按所选协议执行。[Ollama](https://docs.ollama.com/api/openai-compatibility) 可使用 OpenAI-compatible，基础地址为 `http://localhost:11434/v1`，密钥可填写 `ollama` 等占位值。
+使用中转或本地服务时，填写该服务自己的基础地址并选择它支持的协议。兼容接口地址如 `https://api.example.com/v1`，会请求 `https://api.example.com/v1/chat/completions`；此地址仅作示例。也接受完整的生成接口地址。获取模型列表与测试模型同样按所选协议执行。[Ollama](https://docs.ollama.com/api/openai-compatibility) 可使用 OpenAI Completion，基础地址为 `http://localhost:11434/v1`，密钥可填写 `ollama` 等占位值。
 
 Responses 与 Anthropic 的 JSON 输出模式使用结构化 Schema；所选模型或中转接口不支持时，请关闭该选项。
 
@@ -210,7 +210,7 @@ AuraTranslate 翻译**已有字幕或转写稿**，不会录音，也不会为�
 
 ## 开发
 
-弹窗与设置页使用 **React + esbuild**，内容脚本与翻译引擎使用原生 JavaScript。
+弹窗、设置页以及所有页面内 UI（字幕层、播放器工具、划词工具栏与卡片、沉浸式悬浮控件）均使用 **React + esbuild** 编写。页面内组件共用同一份 React 运行时（`ui/content/vendor.js`），因此同一页面加载多个内容脚本时只会初始化一次。控制器保留对宿主元素的所有权（拖拽几何、定位、Shadow Root、YouTube 控制栏），React 负责渲染其中的结构与事件。翻译引擎、字幕发现、缓存与后台脚本仍使用原生 JavaScript。
 
 Node.js 需满足锁定的 jsdom 依赖要求：`^22.22.2 || ^24.15.0 || >=26.0.0`。
 
@@ -234,14 +234,15 @@ npm run test:ui:browser
 
 | 目录 | 内容 |
 | --- | --- |
-| `ui/` | React 弹窗、设置页与共享组件 |
-| `src/` | 网页提取、翻译请求、字幕、缓存与页面内控件 |
+| `ui/` | React 弹窗、设置页与页面内 UI 组件（`ui/content` 共用一份 React 运行时） |
+| `src/` | 网页提取、翻译请求、字幕、缓存与 UI 控制器 |
+| `src/ui/` | 由内容脚本加载的页面内 React 构建产物 |
 | `popup/`、`options/` | 扩展页面与生成的 UI 产物 |
 | `scripts/` | 构建、预览、浏览器检查、基准测试与素材生成 |
 | `test/` | 自动化测试与样例 |
 | `docs/assets/` | README 图片与动图 |
 
-请修改 React 源码，再重新构建并提交界面产物；不要直接修改生成的 `popup/popup.js` 或 `options/options.js`。本地预览和浏览器检查使用模拟存储与接口响应，真实服务商、网站与移动设备验证需要另行执行。
+请修改 React 源码，再重新构建并提交界面产物；不要直接修改生成的 `popup/popup.js`、`options/options.js` 或 `src/ui/*.js`。本地预览和浏览器检查使用模拟存储与接口响应，真实服务商、网站与移动设备验证需要另行执行。
 
 ## 参与贡献
 

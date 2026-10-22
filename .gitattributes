@@ -1,3 +1,5 @@
 # Reproducible generated bundles, including Windows checkouts.
 options/options.js text eol=lf
 popup/popup.js text eol=lf
+src/ui/react-vendor.js text eol=lf
+src/ui/content-ui.js text eol=lf

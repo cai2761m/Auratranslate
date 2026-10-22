@@ -11,6 +11,29 @@
     const BALL_DRAG_THRESHOLD_PX = 4;
     let themeObserver = null;
     let themeUpdateScheduled = false;
+    let ballView = null;
+    let menuView = null;
+    let panelView = null;
+
+    function ballLabel(mode) {
+        if (mode === "translating") return "正在翻译";
+        if (mode === "done") return "隐藏网页译文";
+        if (mode === "error") return "翻译失败，点击重试";
+        return state.translated ? "显示网页译文" : "翻译当前网页";
+    }
+
+    function renderBallView() {
+        if (!ballView) return;
+        ballView.update({
+            label: ballLabel(state.mode),
+            busy: state.mode === "translating",
+            dismissOpen: Boolean(state.dismissOpen)
+        });
+    }
+
+    function renderMenuView() {
+        if (menuView) menuView.update({error: state.menuError || ""});
+    }
 
     function mountControls() {
         if (state.ball || !document.body) {
@@ -21,43 +44,37 @@
         ballContainer.className = "ytbt-immersive-tab";
         ballContainer.dataset.ytbtImmersiveRoot = "true";
 
-        const ball = document.createElement("button");
-        ball.type = "button";
-        ball.className = "ytbt-immersive-ball";
-        ball.setAttribute("aria-label", "翻译当前网页");
-        ball.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M6.5 22 13 6.8a1.1 1.1 0 0 1 2 0L21.5 22"/>
-      <path class="ytbt-aurora-trail" d="M5 21c4-5.5 7-4.3 11-2.6 2.9 1.2 5.4.5 7-1.2"/>
-      <path class="ytbt-aurora-ribbon" d="M4.5 18.5c4-5.6 7.4-4.2 11.1-2.3 3.1 1.6 5.8 1.2 8-1.8"/>
-    </svg>`;
-
-        ballContainer.appendChild(ball);
-
-        const dismiss = document.createElement("button");
-        dismiss.type = "button";
-        dismiss.className = "ytbt-immersive-dismiss";
-        dismiss.title = "关闭悬浮小球";
-        dismiss.setAttribute("aria-label", "关闭悬浮小球");
-        dismiss.setAttribute("aria-haspopup", "dialog");
-        dismiss.setAttribute("aria-expanded", "false");
-        dismiss.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>';
-        ballContainer.appendChild(dismiss);
-
         const dismissMenu = document.createElement("div");
         dismissMenu.className = "ytbt-immersive-dismiss-menu";
         dismissMenu.dataset.ytbtImmersiveRoot = "true";
         dismissMenu.setAttribute("role", "dialog");
         dismissMenu.setAttribute("aria-label", "关闭悬浮小球");
         dismissMenu.hidden = true;
-        dismissMenu.innerHTML = '<button type="button" data-dismiss="session">本次关闭（刷新后恢复）</button><button type="button" data-dismiss="site">禁用本网站</button><p role="status" hidden></p>';
-        dismiss.addEventListener("click", (event) => {
+
+        const panel = document.createElement("div");
+        panel.className = "ytbt-immersive-panel";
+        panel.dataset.ytbtImmersiveRoot = "true";
+        panel.hidden = true;
+        panel.setAttribute("role", "status");
+
+        const ui = globalThis.AuraContentUI;
+        if (ui) {
+            ballView = ui.mountImmersiveBall(ballContainer, {label: ballLabel("idle"), busy: false, dismissOpen: false});
+            menuView = ui.mountImmersiveMenu(dismissMenu, {error: ""});
+            panelView = ui.mountImmersivePanel(panel, {text: ""});
+        }
+
+        const dismiss = ballContainer.querySelector(".ytbt-immersive-dismiss");
+        dismiss?.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();
-            dismissMenu.hidden = !dismissMenu.hidden;
-            dismiss.setAttribute("aria-expanded", String(!dismissMenu.hidden));
-            ballContainer.dataset.ytbtDismissOpen = String(!dismissMenu.hidden);
+            const open = dismissMenu.hidden;
+            dismissMenu.hidden = !open;
+            state.dismissOpen = open;
+            ballContainer.dataset.ytbtDismissOpen = String(open);
+            renderBallView();
             positionDismissMenu();
-            if (!dismissMenu.hidden) dismissMenu.querySelector("button").focus();
+            if (open) dismissMenu.querySelector("button")?.focus();
             syncPanel();
         });
         dismissMenu.addEventListener("click", async (event) => {
@@ -76,24 +93,17 @@
                 state.preferences.immersiveDisabledSites = sites;
                 syncControlVisibility();
             } catch (error) {
-                const message = dismissMenu.querySelector("p");
-                message.textContent = "保存失败，请稍后重试。";
-                message.hidden = false;
+                state.menuError = "保存失败，请稍后重试。";
+                renderMenuView();
             }
         });
         dismissMenu.addEventListener("keydown", (event) => {
             event.stopPropagation();
-            if (event.key === "Escape") { closeDismissMenu(); dismiss.focus(); }
+            if (event.key === "Escape") { closeDismissMenu(); dismiss?.focus(); }
         });
         document.addEventListener("pointerdown", (event) => {
             if (!event.target.closest?.(".ytbt-immersive-dismiss-menu, .ytbt-immersive-tab")) closeDismissMenu();
         });
-
-        const panel = document.createElement("div");
-        panel.className = "ytbt-immersive-panel";
-        panel.dataset.ytbtImmersiveRoot = "true";
-        panel.hidden = true;
-        panel.setAttribute("role", "status");
 
         ballContainer.addEventListener("pointerdown", handleBallPointerDown, true);
         ballContainer.addEventListener("click", handleBallClick);
@@ -102,8 +112,9 @@
         ballContainer.addEventListener("transitionend", (event) => {
             if (event.target === ballContainer && event.propertyName === "right") updateBallTheme();
         });
-        ball.addEventListener("focus", handleControlPointerEnter);
-        ball.addEventListener("blur", handleControlPointerLeave);
+        const ball = ballContainer.querySelector(".ytbt-immersive-ball");
+        ball?.addEventListener("focus", handleControlPointerEnter);
+        ball?.addEventListener("blur", handleControlPointerLeave);
         panel.addEventListener("pointerenter", handleControlPointerEnter);
         panel.addEventListener("pointerleave", handleControlPointerLeave);
         document.body.appendChild(ballContainer);
@@ -128,9 +139,10 @@
 
     function closeDismissMenu() {
         if (state.dismissMenu) state.dismissMenu.hidden = true;
+        state.dismissOpen = false;
         if (state.ball) {
             state.ball.dataset.ytbtDismissOpen = "false";
-            state.ball.querySelector(".ytbt-immersive-dismiss")?.setAttribute("aria-expanded", "false");
+            renderBallView();
         }
     }
 
@@ -438,15 +450,7 @@
             return;
         }
         state.ball.dataset.ytbtState = mode;
-        const button = state.ball.querySelector("button");
-        if (button) {
-            const label = mode === "translating" ? "正在翻译"
-                : mode === "done" ? "隐藏网页译文"
-                    : mode === "error" ? "翻译失败，点击重试"
-                        : state.translated ? "显示网页译文" : "翻译当前网页";
-            button.setAttribute("aria-label", label);
-            button.setAttribute("aria-busy", String(mode === "translating"));
-        }
+        renderBallView();
     }
 
     // The panel is a hover surface: translation progress is recorded here but is
@@ -483,9 +487,7 @@
         const text = state.panelStatusText;
         // Mirror the stored status exactly: a cleared status must not leave the
         // previous message behind for the next hover to reveal.
-        if (panel.textContent !== text) {
-            panel.textContent = text;
-        }
+        if (panelView) panelView.update({text});
         panel.hidden = !text || !state.pointerOverControl || state.ball?.hidden || Boolean(state.dismissMenu && !state.dismissMenu.hidden);
         positionStatusPanel();
     }

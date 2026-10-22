@@ -134,11 +134,11 @@ test("service descriptions and model URLs follow the endpoint", () => {
   assert.equal(Core.describeTranslationService({ baseUrl: "" }), "待完善");
   assert.equal(
     Core.describeTranslationService({ baseUrl: "https://cf.example.cc/v1", models: [{ id: "m" }] }),
-    "cf.example.cc · OpenAI-compatible API · 1 个模型"
+    "cf.example.cc · OpenAI Completion · 1 个模型"
   );
   assert.equal(
     Core.describeTranslationService({ baseUrl: "https://cf.example.cc/v1", models: [] }),
-    "cf.example.cc · OpenAI-compatible API · 尚未添加模型"
+    "cf.example.cc · OpenAI Completion · 尚未添加模型"
   );
 
   assert.equal(Core.buildModelsUrl("https://cf.example.cc/v1/"), "https://cf.example.cc/v1/models");

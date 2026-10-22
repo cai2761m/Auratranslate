@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: 检查版本号
+        run: |
+          node <<'NODE'
+          const assert = require("node:assert/strict");
+          const manifest = require("./manifest.json");
+          const pkg = require("./package.json");
+          assert.equal(pkg.version, manifest.version);
+          assert.equal(process.env.GITHUB_REF_NAME, `v${manifest.version}`);
+          NODE
+
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+
+      - name: 打包扩展
+        run: |
+          zip -qr "auratranslate-${GITHUB_REF_NAME}.zip" \
+            manifest.json icons options popup src LICENSE
+
+      - name: 发布 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "auratranslate-${GITHUB_REF_NAME}.zip" \
+            --verify-tag \
+            --title "AuraTranslate ${GITHUB_REF_NAME}" \
+            --generate-notes

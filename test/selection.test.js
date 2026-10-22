@@ -6,8 +6,7 @@ const {JSDOM} = require("jsdom");
 const {source} = require("../scripts/extension-scripts.cjs");
 const {vocabularyFixture} = require("../scripts/vocabulary-test-helpers.cjs");
 const Core = require("../src/shared.js");
-const script = fs.readFileSync(path.resolve(__dirname, "../src/selection.js"), "utf8");
-const waitFor = async predicate => {
+const script = fs.readFileSync(path.resolve(__dirname, "../src/selection.js"), "utf8");const waitFor = async predicate => {
     for (let count = 0; count < 150; count++) {
         if (predicate()) return;
         await new Promise(resolve => setTimeout(resolve, 10));
@@ -23,6 +22,7 @@ async function page(t, storage = {}) {
     window.chrome = f.chrome;
     window.Range.prototype.getBoundingClientRect = () => ({top: 60, bottom: 80, left: 20, right: 200, width: 180, height: 20});
     window.eval(source("shared"));
+    window.eval(source("content-ui"));
     window.eval(script);
     t.after(() => window.close());
     await waitFor(() => window.YTBTSelection.state.ready);
@@ -49,6 +49,8 @@ test("selection waits for a click, translates with context, saves and opens the 
     f.shadow().querySelector(".selection-trigger").click();
     await waitFor(() => f.shadow()?.querySelector(".translation")?.textContent === "银行");
     assert.equal(f.requests.length, 1);
+    assert.equal(f.shadow().querySelector(".selection-card").getAttribute("aria-label"), "划词翻译");
+    assert.equal(f.shadow().querySelector(".selection-card header").textContent, "×");
     f.shadow().querySelector(".save").click();
     f.shadow().querySelector(".save").click();
     await waitFor(() => f.shadow()?.querySelector(".save")?.textContent === "已收藏");

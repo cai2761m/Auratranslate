@@ -14,6 +14,8 @@
         ballText: null,
         panel: null,
         dismissMenu: null,
+        dismissOpen: false,
+        menuError: "",
         controlDismissed: false,
         panelTimer: null,
         panelStatusText: "",

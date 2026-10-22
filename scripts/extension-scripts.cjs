@@ -5,10 +5,17 @@ const vm = require("node:vm");
 const root = path.resolve(__dirname, "..");
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"));
 
+// In-page UI is split into the shared React runtime plus the components. Both
+// are generated bundles; tests load them the way manifest.json does.
+function uiFiles() {
+  return ["src/ui/react-vendor.js", "src/ui/content-ui.js"];
+}
+
 function files(kind) {
   if (kind === "shared") return manifest.background.scripts.filter(file => /\/shared(?:-|\.)/.test(file));
-  if (kind === "immersive") return manifest.content_scripts.find(entry => entry.js.includes("src/immersive.js"))
-    .js.filter(file => /\/immersive(?:-|\.)/.test(file));
+  if (kind === "content-ui") return uiFiles();
+  if (kind === "immersive") return [...uiFiles(), ...manifest.content_scripts.find(entry => entry.js.includes("src/immersive.js"))
+    .js.filter(file => /\/immersive(?:-|\.)/.test(file))];
   throw new Error(`Unknown script group: ${kind}`);
 }
 
@@ -27,4 +34,4 @@ function loadBackground(context, mode = "worker") {
   } else throw new Error(`Unknown background mode: ${mode}`);
 }
 
-module.exports = { files, source, loadBackground };
+module.exports = { files, source, loadBackground, uiFiles };

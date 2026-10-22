@@ -27,7 +27,7 @@ AuraTranslate is an open-source browser extension for reading foreign-language a
 | Vocabulary notebook | Save text, translations, context and sources; search, add notes, track learned entries, and import/export backups. |
 | Video subtitles | Translate existing English captions on YouTube and accessible Google Drive transcripts into Simplified or Traditional Chinese. |
 | Transcript and summary | On YouTube, search captions, jump to timestamps, follow playback, and generate a summary on demand. |
-| Your own services | Connect OpenAI-compatible, OpenAI Responses, Anthropic Messages, or Gemini APIs; manage model catalogs and choose separate services for webpages and subtitles. |
+| Your own services | Connect OpenAI Completion, OpenAI Responses, Anthropic Messages, or Gemini APIs; manage model catalogs and choose separate services for webpages and subtitles. |
 | Local reuse | Reuse matching translations and summaries from the browser's local cache. |
 
 ## Quick start
@@ -71,12 +71,12 @@ Choose the protocol that matches the endpoint, rather than the model name. These
 
 | API protocol | Official service base URL | Generation endpoint |
 | --- | --- | --- |
-| [OpenAI-compatible API](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create) | Your provider's compatible base URL | `/chat/completions` |
+| [OpenAI Completion](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create) | Your provider's compatible base URL | `/chat/completions` |
 | [OpenAI Responses](https://developers.openai.com/api/docs/guides/migrate-to-responses) | `https://api.openai.com/v1` | `/responses` |
 | [Anthropic Messages](https://platform.claude.com/docs/en/api/messages/create) | `https://api.anthropic.com/v1` | `/messages` |
 | [Google Gemini](https://ai.google.dev/api/generate-content) | `https://generativelanguage.googleapis.com/v1beta` | `/models/{model}:generateContent` |
 
-For a relay or local service, use its own base URL and supported protocol. A compatible base such as `https://api.example.com/v1` becomes `https://api.example.com/v1/chat/completions`; this example is a placeholder. Full generation URLs are also accepted. Model fetching and tests use the selected protocol. [Ollama](https://docs.ollama.com/api/openai-compatibility) can use OpenAI-compatible mode with `http://localhost:11434/v1` and a placeholder key such as `ollama`.
+For a relay or local service, use its own base URL and supported protocol. A compatible base such as `https://api.example.com/v1` becomes `https://api.example.com/v1/chat/completions`; this example is a placeholder. Full generation URLs are also accepted. Model fetching and tests use the selected protocol. [Ollama](https://docs.ollama.com/api/openai-compatibility) can use OpenAI Completion mode with `http://localhost:11434/v1` and a placeholder key such as `ollama`.
 
 JSON output mode uses structured schemas for Responses and Anthropic. Turn it off if the selected model or relay does not support structured output.
 
@@ -210,7 +210,7 @@ If a webpage request times out with an uncertain result, AuraTranslate checks fo
 
 ## Development
 
-The popup and settings pages use **React + esbuild**. Content scripts and the translation engine use plain JavaScript.
+The popup, settings pages, and every in-page UI surface — subtitle overlay, player tools, selection toolbar and card, and the immersive floating control — are written in **React + esbuild**. In-page components share a single React runtime (`ui/content/vendor.js`) so a page that loads several content scripts parses it once. Controllers keep ownership of their host elements (drag geometry, positioning, shadow roots, YouTube's control bar); React renders the markup and handles events inside them. The translation engine, caption discovery, caching, and background scripts remain plain JavaScript.
 
 Use Node.js satisfying the locked jsdom dependency: `^22.22.2 || ^24.15.0 || >=26.0.0`.
 
@@ -234,14 +234,15 @@ The browser checks require installed Chrome. Set `UI_BROWSER=msedge` to use inst
 
 | Directory | Contents |
 | --- | --- |
-| `ui/` | React popup, settings, and shared components |
-| `src/` | Page extraction, translation requests, captions, caching, and in-page controls |
+| `ui/` | React popup, settings, and in-page UI components (`ui/content` shares one React runtime) |
+| `src/` | Page extraction, translation requests, captions, caching, and the UI controllers |
+| `src/ui/` | Generated in-page React bundles loaded by content scripts |
 | `popup/`, `options/` | Extension pages and generated UI bundles |
 | `scripts/` | Builds, previews, browser checks, benchmarks, and media generation |
 | `test/` | Automated tests and fixtures |
 | `docs/assets/` | README images and animations |
 
-Edit the React sources rather than generated `popup/popup.js` or `options/options.js`, and include rebuilt bundles with UI changes. Local previews and browser checks use simulated storage and provider responses. Real provider, website, and mobile-device validation must be performed separately.
+Edit the React sources rather than generated `popup/popup.js`, `options/options.js`, or `src/ui/*.js`, and include rebuilt bundles with UI changes. Local previews and browser checks use simulated storage and provider responses. Real provider, website, and mobile-device validation must be performed separately.
 
 ## Contributing
 

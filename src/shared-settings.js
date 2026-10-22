@@ -125,7 +125,7 @@
 
     // Wire formats supported by both translation and the provider tools.
     const TRANSLATION_SERVICE_PROTOCOLS = Object.freeze({
-        "openai-compatible": "OpenAI-compatible API",
+        "openai-compatible": "OpenAI Completion",
         "openai-responses": "OpenAI Responses",
         "anthropic": "Anthropic Messages",
         "gemini": "Google Gemini"

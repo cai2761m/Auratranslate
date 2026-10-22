@@ -210,31 +210,41 @@ export function PopupApp() {
                         ? "正在翻译，完成后会直接显示在网页中。"
                         : page.translated
                             ? "网页翻译已完成，可随时切换双语或仅译文。"
-                            : page.status ||
-                            (translation ? "仅显示译文" : "原文与译文对照显示"),
+                            : page.status || "",
         error: page?.mode === "error",
     };
     const saveService = (id, requested) =>
         save(popupServicePatch(s, id, requested));
     return (
         <main className={`popup${more ? " more-open" : ""}`}>
+            <h1 className="sr-only">AuraTranslate</h1>
+            <div className="popup-glow" aria-hidden="true"/>
             <header className="popup-header">
-                <div className="brand">
-                    <img className="brand-mark" src="../icons/icon.svg" alt=""/>
-                    <div>
-                        <h1>AuraTranslate</h1>
-                        <p className="brand-caption">让阅读跨越语言</p>
-                    </div>
+                <div className="header-actions">
+                    <button
+                        id="theme-toggle"
+                        className="icon-button"
+                        type="button"
+                        disabled={disabled}
+                        aria-label={`外观：${THEME_LABELS[theme]}，点击切换`}
+                        title={`外观：${THEME_LABELS[theme]}`}
+                        data-theme-preference={theme}
+                        onClick={cycleTheme}
+                    >
+                        <Icon name={`theme-${theme}`}/>
+                    </button>
+                    <button
+                        id="open-settings"
+                        className="icon-button"
+                        type="button"
+                        aria-label="全部设置"
+                        title="全部设置"
+                        onClick={openSettings}
+                    >
+                        <Icon name="settings"/>
+                    </button>
                 </div>
-                <span id="version" className="version">
-          v{chrome.runtime.getManifest().version}
-        </span>
             </header>
-            <div className="current-page">
-                <Icon name="globe"/>
-                <span>{hostname || "当前页面"}</span>
-                <span className="page-kind">网页翻译</span>
-            </div>
             <section className="translation-controls" aria-label="网页翻译">
                 {/* One card for every input the translation needs. The language pair
             and the provider used to be two nested cards with two shadows,
@@ -387,31 +397,15 @@ export function PopupApp() {
                     {status.text}
                 </p>
             </section>
-            <button id="open-vocabulary" className="text-button vocabulary-shortcut" type="button"
-                    onClick={openVocabulary}>
-                <Icon name="book"/> 生词本
-            </button>
             <footer className="popup-footer">
                 <button
-                    id="open-settings"
+                    id="open-vocabulary"
                     className="text-button"
                     type="button"
-                    onClick={openSettings}
+                    onClick={openVocabulary}
                 >
-                    <Icon name="settings"/>
-                    全部设置
-                </button>
-                <button
-                    id="theme-toggle"
-                    className="text-button icon-only"
-                    type="button"
-                    disabled={disabled}
-                    aria-label={`外观：${THEME_LABELS[theme]}，点击切换`}
-                    title={`外观：${THEME_LABELS[theme]}`}
-                    data-theme-preference={theme}
-                    onClick={cycleTheme}
-                >
-                    <Icon name={`theme-${theme}`}/>
+                    <Icon name="book"/>
+                    生词本
                 </button>
                 <button
                     id="more-toggle"

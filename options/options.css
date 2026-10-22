@@ -6,45 +6,15 @@
 
 /* ---------- Page frame ---------- */
 .page {
-    width: min(1200px, calc(100% - 64px));
-    margin: 32px auto 48px;
-}
-
-.page-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 28px;
-}
-
-.brand-name {
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: -0.3px;
-    white-space: nowrap;
-}
-
-.header-divider {
-    width: 1px;
-    height: 20px;
-    margin: 0 2px;
-    background: var(--border);
-}
-
-h1 {
-    margin: 0;
-    color: var(--muted);
-    font-size: 15px;
-    font-weight: 600;
-    white-space: nowrap;
+    width: min(1160px, calc(100% - 64px));
+    margin: 28px auto 56px;
 }
 
 /* ---------- Layout and sub-page navigation ---------- */
 .settings-layout {
     display: grid;
-    grid-template-columns: 224px minmax(0, 1fr);
-    gap: 32px;
+    grid-template-columns: 216px minmax(0, 1fr);
+    gap: 28px;
     align-items: start;
 }
 
@@ -56,7 +26,7 @@ h1 {
 
 .sidebar-nav {
     display: grid;
-    gap: 4px;
+    gap: 2px;
 }
 
 .sidebar-link {
@@ -66,8 +36,8 @@ h1 {
     gap: 12px;
     width: 100%;
     min-width: 0;
-    padding: 12px 14px;
-    border: 1px solid transparent;
+    padding: 10px 12px;
+    border: 0;
     border-radius: 12px;
     background: transparent;
     color: var(--muted);
@@ -79,21 +49,22 @@ h1 {
     color: var(--ink);
 }
 
+/* Selection is a soft aurora tint plus a rail, not a raised card. */
 .sidebar-link[aria-selected="true"] {
-    border-color: var(--border);
-    background: var(--surface);
+    background: var(--aurora-gradient-soft);
     color: var(--ink);
-    box-shadow: var(--shadow-sm);
 }
 
-/* The selected entry carries the same vertical rail as the popup's context
-   strip. */
+.sidebar-link[aria-selected="true"] .sidebar-title {
+    color: var(--accent-text);
+}
+
 .sidebar-link[aria-selected="true"]::before {
     content: "";
     position: absolute;
-    top: 10px;
-    bottom: 10px;
-    left: -1px;
+    top: 12px;
+    bottom: 12px;
+    left: 0;
     width: 3px;
     border-radius: 0 3px 3px 0;
     background: linear-gradient(180deg, var(--aurora-1), var(--aurora-2));
@@ -134,9 +105,9 @@ h1 {
 /* ---------- Panel and sections ---------- */
 .panel {
     min-width: 0;
-    padding: 32px 36px;
+    padding: 36px 40px;
     border: 1px solid var(--border);
-    border-radius: 18px;
+    border-radius: 20px;
     background: var(--surface);
     box-shadow: var(--shadow-sm);
 }
@@ -176,9 +147,9 @@ h1 {
 
 h2 {
     margin: 0;
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 700;
-    letter-spacing: -0.4px;
+    letter-spacing: -0.5px;
 }
 
 .section-heading > p:last-child {
@@ -190,17 +161,31 @@ h2 {
 
 .section-note {
     margin: 0 0 24px;
-    padding: 12px 14px;
-    border-radius: 10px;
-    background: var(--soft);
+    padding: 12px 16px;
+    border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+    border-radius: 12px;
+    background: var(--aurora-gradient-soft);
     font-size: 12.5px;
     line-height: 1.7;
 }
 
+/* Group labels carry a short aurora tick, so groups are found at a glance. */
 .preference-heading {
-    margin: 32px 0 16px;
-    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 36px 0 14px;
+    font-size: 14px;
     font-weight: 700;
+}
+
+.preference-heading::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 3px;
+    height: 14px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, var(--aurora-1), var(--aurora-2));
 }
 
 .preference-heading:first-of-type {
@@ -229,11 +214,28 @@ h2 {
     height: 42px;
     padding: 0 12px;
     border: 1px solid var(--input-border);
-    border-radius: 10px;
-    background: var(--surface);
+    border-radius: 11px;
+    background-color: var(--surface);
     color: var(--ink);
     font-size: 13px;
     font-weight: 400;
+}
+
+/* A drawn chevron instead of the platform arrow, painted with theme tokens so
+   it follows light and dark. */
+.field select,
+.vocabulary-toolbar select {
+    appearance: none;
+    padding-right: 36px;
+    background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+    background-position: right 18px center, right 13px center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+}
+
+.field select:disabled {
+    background-color: var(--subtle);
 }
 
 .field input:hover,
@@ -250,6 +252,7 @@ h2 {
 .model-row input:focus,
 .detail-model-row input:focus {
     border-color: var(--accent);
+    box-shadow: var(--focus-ring);
 }
 
 .field input[readonly] {
@@ -262,12 +265,58 @@ h2 {
 }
 
 .field input[type="range"] {
-    height: 20px;
+    appearance: none;
+    height: 22px;
     padding: 0;
     border: 0;
     background: none;
-    accent-color: var(--accent);
     cursor: pointer;
+}
+
+.field input[type="range"]:focus {
+    box-shadow: none;
+}
+
+.field input[type="range"]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 4px;
+    background: var(--input-border);
+}
+
+.field input[type="range"]::-moz-range-track {
+    height: 4px;
+    border-radius: 4px;
+    background: var(--input-border);
+}
+
+.field input[type="range"]::-moz-range-progress {
+    height: 4px;
+    border-radius: 4px;
+    background: var(--aurora-gradient);
+}
+
+.field input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    margin-top: -7px;
+    border: 3px solid var(--surface);
+    border-radius: 50%;
+    background: var(--aurora-gradient);
+    box-shadow: 0 1px 4px rgba(10, 22, 40, 0.3);
+}
+
+.field input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: 3px solid var(--surface);
+    border-radius: 50%;
+    background: var(--aurora-gradient);
+    box-shadow: 0 1px 4px rgba(10, 22, 40, 0.3);
+}
+
+.field input[type="range"]:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 input::placeholder {
@@ -306,11 +355,28 @@ select {
     align-items: center;
     justify-content: space-between;
     gap: 20px;
-    padding: 16px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
+    position: relative;
+    margin: 0 -14px;
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 13.5px;
     font-weight: 600;
     cursor: pointer;
+}
+
+/* The divider stays aligned with the fields; only the hover tint bleeds out. */
+.toggle::after {
+    content: "";
+    position: absolute;
+    right: 14px;
+    bottom: 0;
+    left: 14px;
+    height: 1px;
+    background: var(--border);
+}
+
+.toggle:hover {
+    background: var(--subtle);
 }
 
 .toggle small {
@@ -326,11 +392,11 @@ select {
     appearance: none;
     position: relative;
     flex: 0 0 auto;
-    width: 38px;
-    height: 22px;
+    width: 36px;
+    height: 20px;
     margin: 0;
     border: 0;
-    border-radius: 22px;
+    border-radius: 20px;
     background: var(--input-border);
     cursor: pointer;
 }
@@ -338,8 +404,8 @@ select {
 .toggle input::before {
     content: "";
     position: absolute;
-    top: 3px;
-    left: 3px;
+    top: 2px;
+    left: 2px;
     width: 16px;
     height: 16px;
     border-radius: 50%;
@@ -549,6 +615,11 @@ button.service-entry[aria-current="true"] {
     border-color: var(--border);
     background: var(--surface);
     box-shadow: var(--shadow-sm);
+}
+
+button.service-entry[aria-current="true"] .service-avatar {
+    background: var(--aurora-gradient);
+    color: #fff;
 }
 
 button.service-entry[aria-current="true"]::before {
@@ -841,9 +912,8 @@ button.service-entry[aria-current="true"]::before {
 
 .theme-options {
     display: flex;
-    gap: 5px;
-    padding: 5px;
-    border: 1px solid var(--border);
+    gap: 2px;
+    padding: 3px;
     border-radius: 12px;
     background: var(--subtle);
 }
@@ -887,21 +957,9 @@ button.service-entry[aria-current="true"]::before {
 }
 
 .theme-option:has(input:checked) {
-    border-color: var(--border);
     background: var(--surface);
     color: var(--accent-text);
     box-shadow: var(--shadow-sm);
-}
-
-.theme-option:has(input:checked)::after {
-    content: "";
-    position: absolute;
-    right: 22%;
-    bottom: 3px;
-    left: 22%;
-    height: 2px;
-    border-radius: 2px;
-    background: linear-gradient(90deg, var(--aurora-1), var(--aurora-2));
 }
 
 .theme-option:has(input:focus-visible) {
@@ -919,13 +977,27 @@ button.service-entry[aria-current="true"]::before {
 
 /* Autosave and error line at the foot of the panel. */
 .status {
-    margin: 24px 0 0;
-    padding: 10px 14px;
-    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 28px 0 0;
+    padding: 7px 14px;
+    border-radius: 999px;
     background: var(--success-soft);
     color: var(--success);
     font-size: 12.5px;
     font-weight: 600;
+}
+
+.status::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
 }
 
 .status:empty {
@@ -952,6 +1024,13 @@ button.service-entry[aria-current="true"]::before {
     z-index: 11;
 }
 
+@keyframes modal-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+    }
+}
+
 .modal-backdrop {
     position: absolute;
     inset: 0;
@@ -969,9 +1048,10 @@ button.service-entry[aria-current="true"]::before {
     max-height: calc(100vh - 48px);
     padding: 28px;
     border: 1px solid var(--border);
-    border-radius: 18px;
+    border-radius: 20px;
     background: var(--surface);
     box-shadow: var(--shadow-lg);
+    animation: modal-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     overflow-y: auto;
     overscroll-behavior: contain;
 }
@@ -1201,10 +1281,6 @@ button.service-entry[aria-current="true"]::before {
         margin: 20px auto 40px;
     }
 
-    .page-header {
-        margin-bottom: 12px;
-    }
-
     .settings-layout {
         grid-template-columns: minmax(0, 1fr);
         gap: 16px;
@@ -1264,22 +1340,19 @@ button.service-entry[aria-current="true"]::before {
         padding: 8px 12px;
     }
 
-    .brand {
-        gap: 8px;
-    }
-
-    .brand-name {
-        font-size: 16px;
-    }
-
-    .brand-mark {
-        width: 34px;
-        height: 34px;
-    }
-
     .panel {
         padding: 22px 16px;
         border-radius: 16px;
+    }
+
+    .toggle {
+        margin: 0 -8px;
+        padding: 14px 8px;
+    }
+
+    .toggle::after {
+        right: 8px;
+        left: 8px;
     }
 
     h2 {
@@ -1348,7 +1421,6 @@ button.service-entry[aria-current="true"]::before {
 
 /* Three appearance options with icons do not fit a 320px phone. */
 .disabled-sites-settings { margin-top: 32px; }
-.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
 .selection-guide { color: var(--muted); padding-left: 24px; line-height: 2; margin: 24px 0; }
 #selection-settings { max-width: 760px; }
 .selection-customization { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--border); }

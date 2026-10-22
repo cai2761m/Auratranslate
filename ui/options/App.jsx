@@ -126,14 +126,7 @@ export function OptionsApp() {
 
     return (
         <main className="page">
-            <header className="page-header">
-                <div className="brand">
-                    <img className="brand-mark" src="../icons/icon.svg" alt=""/>
-                    <span className="brand-name">AuraTranslate</span>
-                    <span className="header-divider"/>
-                    <h1>设置</h1>
-                </div>
-            </header>
+            <h1 className="sr-only">AuraTranslate 设置</h1>
             <div className="settings-layout">
                 <aside className="settings-sidebar" inert={modal || picking}>
                     <nav

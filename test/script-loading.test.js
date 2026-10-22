@@ -55,8 +55,11 @@ test("webpage modules coexist with subtitle globals and repeated injection keeps
   const scripts = manifest.content_scripts.find(entry => entry.js.includes("src/immersive.js")).js;
   for (const file of scripts) window.eval(read(file));
   const pageState = window.YTBTImmersive.state;
+  const reactRuntime = window.AuraReact;
   for (const file of scripts) window.eval(read(file));
   await new Promise(resolve => setImmediate(resolve));
+  assert.equal(window.AuraReact, reactRuntime, "the React vendor bundle initialises once");
+  assert.equal(typeof window.AuraContentUI.mountImmersiveBall, "function");
   assert.equal(window.Core, "subtitle-core");
   assert.equal(window.state.subtitle, true);
   assert.equal(window.BATCH_SIZE, 30);

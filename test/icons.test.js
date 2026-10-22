@@ -3,7 +3,6 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const { MARK, PNG_SIZES, iconSvg } = require("../scripts/build-icons.cjs");
-const { mount } = require("../scripts/ui-test-helpers.cjs");
 
 const root = path.resolve(__dirname, "..");
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"));
@@ -24,7 +23,7 @@ test("every icon the manifest declares exists at the size it is declared for", (
 });
 
 test("the icon uses the floating control's mark", () => {
-  const control = fs.readFileSync(path.join(root, "src/immersive-controls.js"), "utf8");
+  const control = fs.readFileSync(path.join(root, "ui/content/ImmersiveUI.jsx"), "utf8");
   for (const [part, d] of Object.entries(MARK)) assert.ok(control.includes(`d="${d}"`), `${part} path matches`);
   // The committed vector is the one the generator produces. Line endings are
   // normalised because a Windows checkout writes text files with CRLF.
@@ -36,20 +35,4 @@ test("toolbar sizes drop the faint trail, larger sizes keep it", () => {
   assert.ok(!iconSvg(16).includes(MARK.trail));
   assert.ok(!iconSvg(32).includes(MARK.trail));
   assert.ok(iconSvg(48).includes(MARK.trail));
-});
-
-test("the popup and settings headers show the extension icon", async (t) => {
-  // The popup reads its version and active tab while rendering.
-  const popupChrome = {
-    runtime: { getManifest: () => manifest },
-    storage: { local: { get: (defaults, done) => done(defaults), set: (_values, done) => done() } },
-    tabs: { query: (_query, done) => done([]) },
-  };
-  for (const name of ["popup", "options"]) {
-    const page = await mount(t, name, name === "popup" ? { chrome: popupChrome } : {});
-    const mark = page.$(".brand-mark");
-    assert.equal(mark.tagName, "IMG", `${name} brand mark is the icon image`);
-    assert.equal(mark.getAttribute("alt"), "", "decorative beside the product name");
-    assert.ok(fs.existsSync(path.join(root, name, mark.getAttribute("src"))), `${name} icon resolves`);
-  }
 });

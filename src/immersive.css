@@ -13,6 +13,7 @@
     --ytbt-aurora-ribbon: #90efd8;
     --ytbt-aurora-trail: #b2b9ff;
     --ytbt-aurora-curtain: rgba(119, 231, 217, 0.18);
+    --ytbt-ball-hover-offset: -2px;
     all: initial;
     position: fixed;
     top: 50%;
@@ -47,9 +48,14 @@
 }
 
 .ytbt-immersive-tab:hover {
-    transform: translate(-2px, -50%);
+    transform: translate(var(--ytbt-ball-hover-offset), -50%);
     box-shadow: -4px 3px 16px rgba(58, 196, 173, 0.16), 4px -2px 16px rgba(146, 110, 225, 0.16), 0 9px 24px var(--ytbt-ball-shadow), inset 0 1px 0 var(--ytbt-ball-sheen);
 }
+
+.ytbt-immersive-tab[data-ytbt-side="left"] { --ytbt-ball-hover-offset: 2px; }
+.ytbt-immersive-tab[data-ytbt-side="left"] .ytbt-immersive-dismiss { left: auto; right: -5px; }
+.ytbt-immersive-panel[data-ytbt-side="left"],
+.ytbt-immersive-dismiss-menu[data-ytbt-side="left"] { left: 12px; right: auto; }
 
 .ytbt-immersive-tab[hidden], .ytbt-immersive-dismiss-menu[hidden] { display: none !important; }
 .ytbt-immersive-dismiss {
@@ -122,7 +128,7 @@
 }
 
 .ytbt-immersive-tab:active {
-    transform: translate(-2px, -50%) scale(0.95);
+    transform: translate(var(--ytbt-ball-hover-offset), -50%) scale(0.95);
 }
 
 .ytbt-immersive-tab.ytbt-immersive-dragging {

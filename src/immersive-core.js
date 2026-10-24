@@ -37,6 +37,7 @@
         contextRunId: "",
         preferencesReady: null,
         ballTopPct: DEFAULT_BALL_TOP_PCT,
+        ballSide: "right",
         ballDrag: {
             pointerId: null,
             startClientY: 0,

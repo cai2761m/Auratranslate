@@ -15,7 +15,7 @@ async function checkFloatingControl(browser, screenshots) {
       body.dark { background: #19191f; color: #eeedf4; }
       article { min-height: 100vh; padding: 90px 80px; box-sizing: border-box; background: transparent; }
       h1 { font-size: 30px; font-weight: 500; } p { max-width: 560px; opacity: .65; }
-    </style></head><body><article><h1>让阅读跨越语言</h1><p>在当前网页中阅读、翻译与对照。右侧悬浮按钮根据它所在位置的背景切换颜色。</p></article></body></html>`);
+    </style></head><body><article><h1>让阅读跨越语言</h1><p>在当前网页中阅读、翻译与对照。悬浮按钮支持左右停靠，并根据所在位置的背景切换颜色。</p></article></body></html>`);
     await page.addStyleTag({ path: path.resolve("src/immersive.css") });
     await page.evaluate(() => {
       const state = {
@@ -45,6 +45,25 @@ async function checkFloatingControl(browser, screenshots) {
     const control = page.locator(".ytbt-immersive-tab");
     const button = page.locator(".ytbt-immersive-ball");
     const panel = page.locator(".ytbt-immersive-panel");
+    const waitForDock = (side) => page.waitForFunction((expected) => {
+      const ball = document.querySelector(".ytbt-immersive-tab");
+      const rect = ball.getBoundingClientRect();
+      const gap = expected === "left" ? rect.left : window.innerWidth - rect.right;
+      return ball.dataset.ytbtSide === expected && Math.abs(gap - 12) <= 2.1;
+    }, side);
+    const dragTo = async (x, y) => {
+      const rect = await control.boundingBox();
+      await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(x, y, { steps: 12 });
+      await page.mouse.up();
+    };
+    const remountControls = () => page.evaluate(() => {
+      const app = window.YTBTImmersive;
+      for (const element of [app.state.ball, app.state.panel, app.state.dismissMenu]) element.remove();
+      app.state.ball = null;
+      app.mountControls();
+    });
     const theme = (value) => page.waitForFunction((expected) => document.querySelector(".ytbt-immersive-tab").dataset.ytbtTheme === expected, value);
     await theme("light");
     assert.equal(await button.evaluate((el) => getComputedStyle(el).color), "rgb(41, 39, 53)");
@@ -113,7 +132,31 @@ async function checkFloatingControl(browser, screenshots) {
     await page.mouse.up();
     await page.waitForFunction(() => Math.abs(parseFloat(getComputedStyle(document.querySelector(".ytbt-immersive-tab")).right) - 12) < .1);
     assert.ok(await page.evaluate(() => window.previewStorage.immersiveBallTopPct > 60), "dragged position persists");
+    assert.equal(await page.evaluate(() => window.previewStorage.immersiveBallSide), "right");
     assert.equal(await page.evaluate(() => window.previewCalls), 1, "drag does not translate");
+
+    await dragTo(130, 280);
+    await waitForDock("left");
+    assert.equal(await page.evaluate(() => window.previewStorage.immersiveBallSide), "left", "left dock persists after release");
+    assert.equal(await page.evaluate(() => window.previewCalls), 1, "dragging across the page does not translate");
+    await remountControls();
+    await waitForDock("left");
+    assert.ok(Math.abs((await control.boundingBox()).y + 19 - 280) < 1, "saved height restores with the left dock");
+
+    // A canceled drag returns to the previous dock without changing storage.
+    let leftRect = await control.boundingBox();
+    await page.mouse.move(leftRect.x + 19, leftRect.y + 19);
+    await page.mouse.down();
+    await page.mouse.move(700, 280, { steps: 8 });
+    await control.dispatchEvent("pointercancel", { pointerId: 1, pointerType: "mouse" });
+    await page.mouse.up();
+    await waitForDock("left");
+    assert.equal(await page.evaluate(() => window.previewStorage.immersiveBallSide), "left");
+    await dragTo(760, 280);
+    await waitForDock("right");
+    assert.equal(await page.evaluate(() => window.previewStorage.immersiveBallSide), "right", "left dock can be dragged back to the right");
+    await dragTo(130, 280);
+    await waitForDock("left");
     await page.evaluate(() => {
       const app = window.YTBTImmersive;
       app.state.translated = false;
@@ -121,27 +164,33 @@ async function checkFloatingControl(browser, screenshots) {
       app.showStatus("连接失败，请稍后重试。", true);
     });
     await control.hover();
+    const leftPanelRect = await panel.boundingBox();
+    assert.ok(leftPanelRect.x >= 8 && leftPanelRect.x + leftPanelRect.width < 450, "status follows the left dock");
+    await page.screenshot({ path: path.join(screenshots, "floating-left.png"), animations: "disabled" });
     await page.screenshot({ path: path.join(screenshots, "floating-error.png"), animations: "disabled" });
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.evaluate(() => window.YTBTImmersive.updateBallMode("translating"));
     assert.equal(await button.evaluate((el) => getComputedStyle(el, "::before").animationName), "none");
     assert.equal(await control.evaluate((el) => getComputedStyle(el, "::before").animationName), "none", "reduced motion also stops the aurora curtain");
     await page.setViewportSize({ width: 320, height: 640 });
+    await waitForDock("left");
     const mobileRect = await control.boundingBox();
     assert.equal(mobileRect.width, 38);
-    assert.ok(mobileRect.x >= 0 && mobileRect.x + mobileRect.width <= 320);
+    assert.ok(mobileRect.x >= 10 && mobileRect.x <= 14, "left dock remains at the edge after resize");
+    await dragTo(250, 300);
+    await waitForDock("right");
+    await dragTo(60, 300);
+    await waitForDock("left");
+    assert.equal(await page.evaluate(() => window.previewCalls), 1, "mobile-sized drags do not translate");
     // Saved near-edge positions must remain reachable on short mobile views.
     await page.evaluate(() => {
       window.previewStorage.immersiveBallTopPct = 96;
-      window.YTBTImmersive.state.ball.remove();
-      window.YTBTImmersive.state.panel.remove();
-      window.YTBTImmersive.state.dismissMenu.remove();
-      window.YTBTImmersive.state.ball = null;
-      window.YTBTImmersive.mountControls();
     });
+    await remountControls();
     await page.setViewportSize({ width: 320, height: 240 });
     await page.waitForFunction(() => document.querySelector(".ytbt-immersive-tab").style.top.includes("96%"));
     const shortRect = await control.boundingBox();
+    assert.ok(shortRect.x >= 10 && shortRect.x <= 14, "left dock restores on a short mobile view");
     assert.ok(shortRect.y >= 8 && shortRect.y + shortRect.height <= 232, "saved position respects viewport edges");
     await page.screenshot({ path: path.join(screenshots, "floating-mobile.png"), animations: "disabled" });
     await page.setViewportSize({width: 900, height: 640});
@@ -152,6 +201,8 @@ async function checkFloatingControl(browser, screenshots) {
     assert.equal(await dismiss.evaluate((el) => getComputedStyle(el).opacity), "1");
     await dismiss.click();
     assert.equal(await menu.isVisible(), true);
+    const menuRect = await menu.boundingBox();
+    assert.ok(menuRect.x >= 8 && menuRect.x + menuRect.width < 450, "close menu follows the left dock");
     assert.equal(await panel.isVisible(), false, "status and close menu do not overlap");
     await page.screenshot({path: path.join(screenshots, "floating-dismiss.png"), animations: "disabled"});
     await page.locator('[data-dismiss="session"]').click();

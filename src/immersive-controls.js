@@ -349,8 +349,9 @@
             event.preventDefault();
             event.stopPropagation();
             drag.suppressClick = true;
-            state.ball.style.right = `${BALL_DOCK_GAP_PX}px`;
-            updateBallTheme();
+            const rect = state.ball.getBoundingClientRect();
+            state.ballSide = rect.left + rect.width / 2 < window.innerWidth / 2 ? "left" : "right";
+            applyBallDock();
             saveBallPosition();
         }
         cancelBallDrag();
@@ -361,7 +362,7 @@
             return;
         }
         if (state.ballDrag.active && state.ball) {
-            state.ball.style.right = `${BALL_DOCK_GAP_PX}px`;
+            applyBallDock();
             updateBallTheme();
         }
         cancelBallDrag();
@@ -406,6 +407,19 @@
         applyBallPosition();
     }
 
+    function applyBallDock() {
+        if (!state.ball) return;
+        const side = state.ballSide === "left" ? "left" : "right";
+        state.ball.dataset.ytbtSide = side;
+        // A viewport-relative offset keeps the left dock in place on resize.
+        state.ball.style.right = side === "left"
+            ? `calc(100% - ${BALL_DOCK_GAP_PX + (state.ball.offsetWidth || 38)}px)`
+            : `${BALL_DOCK_GAP_PX}px`;
+        for (const surface of [state.panel, state.dismissMenu]) {
+            if (surface) surface.dataset.ytbtSide = side;
+        }
+    }
+
     function applyBallPosition() {
         const topPct = App.clamp(Number(state.ballTopPct) || App.DEFAULT_BALL_TOP_PCT, 4, 96);
         state.ballTopPct = topPct;
@@ -420,12 +434,14 @@
 
     async function loadBallPosition() {
         try {
-            const values = await App.storageGet({immersiveBallTopPct: App.DEFAULT_BALL_TOP_PCT});
+            const values = await App.storageGet({immersiveBallTopPct: App.DEFAULT_BALL_TOP_PCT, immersiveBallSide: "right"});
             state.ballTopPct = normalizeBallTopPct(values.immersiveBallTopPct);
-            applyBallPosition();
+            state.ballSide = values.immersiveBallSide === "left" ? "left" : "right";
         } catch (error) {
-            applyBallPosition();
+            // Keep the default dock when storage is unavailable.
         }
+        applyBallDock();
+        applyBallPosition();
     }
 
     async function saveBallPosition() {
@@ -433,7 +449,7 @@
         state.ballTopPct = topPct;
         applyBallPosition();
         try {
-            await App.storageSet({immersiveBallTopPct: topPct});
+            await App.storageSet({immersiveBallTopPct: topPct, immersiveBallSide: state.ballSide});
         } catch (error) {
             // Position persistence is nice-to-have; dragging should still work.
         }
